@@ -1,1 +1,1 @@
-Kivo
+# Kivo AI — Lovable-Style Code Generator

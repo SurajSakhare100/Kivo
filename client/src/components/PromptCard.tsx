@@ -16,7 +16,7 @@ export function PromptCard({
   initialPrompt = "",
 }: PromptCardProps) {
   const [prompt, setPrompt] = useState("");
-  const [selectedModel, setSelectedModel] = useState<AIModel>("Auto");
+  const [selectedModel, setSelectedModel] = useState<AIModel>("Kivo AI Engine");
   const [isRecording, setIsRecording] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<string[]>([]);
   const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
@@ -117,7 +117,7 @@ export function PromptCard({
     };
   }, []);
 
-  const models: AIModel[] = ["Auto", "GPT-4o", "Claude 3.7 Sonnet", "Gemini 2.5 Pro", "DeepSeek R1"];
+  const models: AIModel[] = ["Kivo AI Engine"];
 
   return (
     <div className="w-full max-w-[760px] mx-auto">

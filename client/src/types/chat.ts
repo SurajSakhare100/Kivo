@@ -7,4 +7,4 @@ export interface Message {
   timestamp: string;
 }
 
-export type AIModel = "Auto" | "GPT-4o" | "Claude 3.7 Sonnet" | "Gemini 2.5 Pro" | "DeepSeek R1";
+export type AIModel = "Kivo AI Engine";

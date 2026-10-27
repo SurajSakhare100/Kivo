@@ -24,7 +24,7 @@ export function Footer() {
           .
         </p>
         <p className="text-[11px] text-[#8E8E93] leading-relaxed">
-          AI can make mistakes. Kivo App provides access to third-party LLMs via APIs. We are not affiliated with, endorsed by, or the owner of these models.
+          AI generated code may require review. Verify critical functionality.
         </p>
       </div>
     </footer>
