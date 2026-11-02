@@ -1,8 +1,10 @@
 import dotenv from "dotenv";
 import path from "path";
 
-// Load .env from project root
+// Load .env (current working directory, fallback to parent if in monorepo)
+dotenv.config();
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 const configuredModel = process.env.DEFAULT_MODEL?.trim();
 const defaultGroqModel = configuredModel || "llama-3.3-70b-versatile";
