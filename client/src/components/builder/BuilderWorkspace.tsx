@@ -35,7 +35,7 @@ import {
 } from "@/lib/storage/db";
 import { useAuth } from "@/context/AuthContext";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_BASE = process.env.NEXT_API_URL || "http://localhost:5000";
 
 export default function BuilderWorkspace({ initialProjectId }: { initialProjectId?: string }) {
   const { token, updateTokensLive, refreshBalance, openTokenSettings } = useAuth();
@@ -186,8 +186,8 @@ export default function BuilderWorkspace({ initialProjectId }: { initialProjectI
     const starterContent = path.endsWith(".tsx") || path.endsWith(".jsx")
       ? `import React from 'react';\n\nexport default function Component() {\n  return (\n    <div className="p-4 text-white">\n      New Component: ${path}\n    </div>\n  );\n}\n`
       : path.endsWith(".css")
-      ? `/* Styles for ${path} */\n`
-      : "";
+        ? `/* Styles for ${path} */\n`
+        : "";
 
     await saveFile(activeProject.id, path, starterContent);
     setFiles((prev) => ({ ...prev, [path]: starterContent }));
@@ -332,10 +332,10 @@ export default function BuilderWorkspace({ initialProjectId }: { initialProjectI
             prev.map((m) =>
               m.id === assistantMsgId
                 ? {
-                    ...m,
-                    content: `⚠️ **${errorData.error || "Limit Exceeded"}**: ${limitMsg}\n\nPlease refill your tokens or adjust your dummy token limit in Settings.`,
-                    status: "error",
-                  }
+                  ...m,
+                  content: `⚠️ **${errorData.error || "Limit Exceeded"}**: ${limitMsg}\n\nPlease refill your tokens or adjust your dummy token limit in Settings.`,
+                  status: "error",
+                }
                 : m
             )
           );
@@ -444,12 +444,12 @@ export default function BuilderWorkspace({ initialProjectId }: { initialProjectI
                 prev.map((m) =>
                   m.id === assistantMsgId
                     ? {
-                        ...m,
-                        content: updatedSummary,
-                        tokensUsed: event.tokensUsed,
-                        generationTime: event.generationTime,
-                        status: "completed",
-                      }
+                      ...m,
+                      content: updatedSummary,
+                      tokensUsed: event.tokensUsed,
+                      generationTime: event.generationTime,
+                      status: "completed",
+                    }
                     : m
                 )
               );
@@ -469,10 +469,10 @@ export default function BuilderWorkspace({ initialProjectId }: { initialProjectI
                 prev.map((m) =>
                   m.id === assistantMsgId
                     ? {
-                        ...m,
-                        content: `Error: ${event.error}`,
-                        status: "error",
-                      }
+                      ...m,
+                      content: `Error: ${event.error}`,
+                      status: "error",
+                    }
                     : m
                 )
               );

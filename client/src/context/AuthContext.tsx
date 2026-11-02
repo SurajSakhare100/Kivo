@@ -65,7 +65,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_BASE = process.env.NEXT_API_URL || "http://localhost:5000";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .then((data) => {
             if (data.plans) setPricingPlans(data.plans);
           })
-          .catch(() => {});
+          .catch(() => { });
 
         const savedToken = localStorage.getItem("kivo_token");
         if (savedToken) {
@@ -123,7 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const balance = await res.json();
           setTokens(balance);
         }
-      } catch {}
+      } catch { }
     }
 
     initAuth();
@@ -213,7 +213,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await fetch(`${API_BASE}/api/auth/logout`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
-        }).catch(() => {});
+        }).catch(() => { });
       }
     } finally {
       localStorage.removeItem("kivo_token");

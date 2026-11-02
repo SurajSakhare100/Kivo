@@ -1,5 +1,5 @@
 // API client for Kivo backend
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_BASE = process.env.NEXT_API_URL || "http://localhost:5000";
 
 export interface GenerateRequest {
   prompt: string;
@@ -86,7 +86,7 @@ export async function* streamGenerateWebsite(
       if (line.startsWith("data: ")) {
         try {
           yield JSON.parse(line.slice(6)) as StreamEvent;
-        } catch {}
+        } catch { }
       }
     }
   }
