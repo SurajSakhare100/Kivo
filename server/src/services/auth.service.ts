@@ -69,6 +69,32 @@ export class AuthService {
       );
     }
 
+    // Decode without verifying first so we can give a helpful mismatch error
+    // instead of the opaque "Wrong recipient, payload audience != requiredAudience"
+    const [, payloadB64] = idToken.split(".");
+    if (payloadB64) {
+      try {
+        const raw = Buffer.from(payloadB64, "base64url").toString("utf8");
+        const { aud } = JSON.parse(raw) as { aud?: string | string[] };
+        const audiences = Array.isArray(aud) ? aud : [aud];
+        if (!audiences.includes(config.googleClientId)) {
+          console.error(
+            `[Auth] Google Client ID mismatch.\n` +
+            `  Token audience : ${audiences.join(", ")}\n` +
+            `  Server expects : ${config.googleClientId}\n` +
+            `  Fix: ensure GOOGLE_CLIENT_ID on the server matches NEXT_PUBLIC_GOOGLE_CLIENT_ID used by the frontend.`
+          );
+          throw new Error(
+            `Google Client ID mismatch: the token was issued for "${audiences[0]}" but the server is configured with a different Client ID. ` +
+            `Make sure GOOGLE_CLIENT_ID in your server environment matches the NEXT_PUBLIC_GOOGLE_CLIENT_ID used to build the frontend.`
+          );
+        }
+      } catch (parseErr) {
+        if (parseErr instanceof Error && parseErr.message.includes("mismatch")) throw parseErr;
+        // If we can't decode the JWT header, fall through and let google-auth-library handle it
+      }
+    }
+
     const googleClient = new OAuth2Client(config.googleClientId);
     const ticket = await googleClient.verifyIdToken({
       idToken,

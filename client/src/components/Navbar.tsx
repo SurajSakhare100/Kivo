@@ -51,22 +51,24 @@ export function Navbar({ onLoginClick, onResetChat }: NavbarProps) {
         {/* Token Pill Button */}
         <button
           onClick={openTokenSettings}
-          title="Click to view token budget and dummy limits"
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-neutral-800 bg-neutral-900/80 hover:bg-neutral-800/80 hover:border-neutral-700 text-xs transition cursor-pointer shadow-xs group"
+          title="View token usage"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-neutral-800 bg-neutral-900/80 hover:bg-neutral-800/80 hover:border-neutral-700 transition cursor-pointer group"
         >
           <Zap
-            className={`h-3.5 w-3.5 ${
+            className={`h-3 w-3 shrink-0 ${
               percentUsed > 80
                 ? "text-red-400"
                 : percentUsed > 50
                 ? "text-amber-400"
                 : "text-emerald-400"
-            } group-hover:scale-110 transition-transform`}
+            }`}
           />
-          <span className="font-medium text-neutral-300">
-            {tokensRemaining.toLocaleString()} <span className="text-neutral-500 text-[10px]">tokens</span>
+          <span className="text-[11px] font-medium text-neutral-300 tabular-nums">
+            {tokensRemaining >= 1000
+              ? `${(tokensRemaining / 1000).toFixed(0)}k`
+              : tokensRemaining}
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded-full bg-neutral-800 text-neutral-400 border border-neutral-700/60">
+          <span className="text-[9px] font-semibold uppercase tracking-wide text-neutral-500">
             {currentPlan}
           </span>
         </button>
