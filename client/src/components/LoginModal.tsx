@@ -9,6 +9,51 @@ interface LoginModalProps {
   onClose: () => void;
 }
 
+type GoogleAccountsId = {
+  initialize: (config: {
+    client_id: string;
+    callback: (response: { credential?: string }) => void;
+    auto_select?: boolean;
+    ux_mode?: "popup" | "redirect";
+    use_fedcm_for_prompt?: boolean;
+    cancel_on_tap_outside?: boolean;
+    itp_support?: boolean;
+  }) => void;
+  renderButton: (
+    parent: HTMLElement,
+    options: {
+      type?: string;
+      theme?: string;
+      size?: string;
+      text?: string;
+      shape?: string;
+      logo_alignment?: string;
+      width?: number;
+    }
+  ) => void;
+  prompt: (callback?: (notification: {
+    isNotDisplayed: () => boolean;
+    isSkippedMoment: () => boolean;
+    getNotDisplayedReason: () => string;
+    getSkippedReason: () => string;
+  }) => void) => void;
+};
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: GoogleAccountsId;
+      };
+    };
+  }
+}
+
+function getGoogleAccountsId(): GoogleAccountsId | null {
+  if (typeof window === "undefined") return null;
+  return window.google?.accounts?.id ?? null;
+}
+
 export function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const { loginWithGoogle, loginDemo, isLoading } = useAuth();
   const [email, setEmail] = useState("");
@@ -46,7 +91,37 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     [loginWithGoogle, onClose]
   );
 
-  // Initialize Google Identity Services (GIS) button safely
+  const renderGoogleButton = useCallback(() => {
+    const googleId = getGoogleAccountsId();
+    const container = googleBtnContainerRef.current;
+    if (!isConfigured || !googleId || !container) return false;
+
+    googleId.initialize({
+      client_id: googleClientId,
+      callback: handleCredentialResponse,
+      auto_select: false,
+      ux_mode: "popup",
+      use_fedcm_for_prompt: true,
+      cancel_on_tap_outside: true,
+      itp_support: true,
+    });
+
+    container.innerHTML = "";
+    const width = Math.max(240, Math.min(container.offsetWidth || 360, 400));
+    googleId.renderButton(container, {
+      type: "standard",
+      theme: "filled_black",
+      size: "large",
+      text: "continue_with",
+      shape: "rectangular",
+      logo_alignment: "left",
+      width,
+    });
+    setIsGsiRendered(true);
+    return true;
+  }, [googleClientId, handleCredentialResponse, isConfigured]);
+
+  // Initialize Google Identity Services (GIS) button into a visible container
   useEffect(() => {
     if (!isOpen) {
       setIsGsiRendered(false);
@@ -58,77 +133,79 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
       return;
     }
 
+    let cancelled = false;
     let checkCount = 0;
-    const maxChecks = 25; // 5 seconds polling
+    const maxChecks = 40;
+
+    const tryRender = () => {
+      if (cancelled) return true;
+      try {
+        return renderGoogleButton();
+      } catch (err: unknown) {
+        console.warn("[GSI] Could not render Google button:", err);
+        return false;
+      }
+    };
+
+    if (tryRender()) {
+      return;
+    }
 
     const interval = setInterval(() => {
       checkCount++;
-      const google = (typeof window !== "undefined" ? (window as any).google : null);
-
-      if (google?.accounts?.id && googleBtnContainerRef.current) {
-        try {
-          google.accounts.id.initialize({
-            client_id: googleClientId,
-            callback: handleCredentialResponse,
-            auto_select: false,
-          });
-
-          // Clear previous render to avoid duplicates
-          if (googleBtnContainerRef.current) {
-            googleBtnContainerRef.current.innerHTML = "";
-            google.accounts.id.renderButton(googleBtnContainerRef.current, {
-              type: "standard",
-              theme: "filled_black",
-              size: "large",
-              text: "continue_with",
-              shape: "rectangular",
-              logo_alignment: "left",
-              width: 360,
-            });
-            setIsGsiRendered(true);
-          }
-        } catch (err: unknown) {
-          console.warn("[GSI] Could not render Google button:", err);
+      if (tryRender() || checkCount >= maxChecks) {
+        clearInterval(interval);
+        if (checkCount >= maxChecks && !getGoogleAccountsId()) {
+          setError("Google Sign-In failed to load. Check your connection and try again.");
         }
-        clearInterval(interval);
-      } else if (checkCount >= maxChecks) {
-        clearInterval(interval);
       }
-    }, 200);
+    }, 150);
 
-    return () => clearInterval(interval);
-  }, [isOpen, isConfigured, googleClientId, handleCredentialResponse]);
+    const onGsiLoaded = () => {
+      tryRender();
+    };
+    window.addEventListener("gsi-loaded", onGsiLoaded);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      window.removeEventListener("gsi-loaded", onGsiLoaded);
+    };
+  }, [isOpen, isConfigured, renderGoogleButton]);
 
   if (!isOpen) return null;
 
   const handleFallbackGoogleClick = async () => {
     setError(null);
     try {
-      const google = typeof window !== "undefined" ? (window as any).google : null;
-      if (isConfigured && google?.accounts?.id) {
-        google.accounts.id.prompt((notification: any) => {
+      const googleId = getGoogleAccountsId();
+      if (isConfigured && googleId) {
+        if (!isGsiRendered) {
+          renderGoogleButton();
+        }
+        googleId.prompt((notification) => {
           if (notification.isNotDisplayed()) {
-            console.warn("[GSI] One Tap prompt not displayed:", notification.getNotDisplayedReason());
+            setError(`Google Sign-In unavailable: ${notification.getNotDisplayedReason()}`);
           }
           if (notification.isSkippedMoment()) {
             console.warn("[GSI] One Tap prompt skipped:", notification.getSkippedReason());
           }
         });
+        return;
+      }
+
+      const res = await loginDemo(
+        email.trim() || "google.builder@gmail.com",
+        name.trim() || "Google Builder"
+      );
+      if (res.success) {
+        setIsSubmitted(true);
+        setTimeout(() => {
+          setIsSubmitted(false);
+          onClose();
+        }, 700);
       } else {
-        // Instant Developer / Demo Google Sign-In with verified token session
-        const res = await loginDemo(
-          email.trim() || "google.builder@gmail.com",
-          name.trim() || "Google Builder"
-        );
-        if (res.success) {
-          setIsSubmitted(true);
-          setTimeout(() => {
-            setIsSubmitted(false);
-            onClose();
-          }, 700);
-        } else {
-          setError(res.error || "Could not complete sign in. Ensure backend is running.");
-        }
+        setError(res.error || "Could not complete sign in. Ensure backend is running.");
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Sign-in failed");
@@ -213,21 +290,20 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
           ) : (
             <div className="space-y-4">
               {/* Google Button Section */}
-              <div className="flex flex-col items-center justify-center">
-                {/* Official Google Identity Services iframe container */}
+              <div className="relative flex w-full flex-col items-center justify-center">
+                {/* Keep this visible so GIS can measure width (display:none breaks the iframe). */}
                 <div
                   ref={googleBtnContainerRef}
                   id="google-btn-container"
-                  className={`w-full flex justify-center ${isGsiRendered ? "min-h-[44px]" : "hidden"}`}
+                  className={`w-full min-h-[44px] flex justify-center ${isGsiRendered ? "" : "opacity-0 pointer-events-none"}`}
                 />
 
-                {/* Fallback button when official GIS button is not yet rendered or client id is missing */}
                 {!isGsiRendered && (
                   <button
                     type="button"
                     onClick={handleFallbackGoogleClick}
                     disabled={isLoading}
-                    className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-neutral-700 bg-neutral-800/80 hover:bg-neutral-700 text-sm font-medium text-white transition-all cursor-pointer shadow-sm active:scale-98"
+                    className={`${isConfigured ? "absolute inset-0" : "w-full"} flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-neutral-700 bg-neutral-800/80 hover:bg-neutral-700 text-sm font-medium text-white transition-all cursor-pointer shadow-sm active:scale-98`}
                   >
                     {isLoading ? (
                       <Loader2 className="h-4 w-4 animate-spin text-white" />

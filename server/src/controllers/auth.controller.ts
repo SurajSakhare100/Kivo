@@ -5,23 +5,17 @@ export class AuthController {
   /**
    * Google OAuth verification & sign in
    */
-  static async googleLogin(req: Request, res: Response, next: NextFunction): Promise<void> {
+  static async googleLogin(req: Request, res: Response, _next: NextFunction): Promise<void> {
     try {
-      const { credential, email, name } = req.body;
+      const credential =
+        typeof req.body?.credential === "string" ? req.body.credential.trim() : "";
 
-      if (!credential && !email) {
-        res.status(400).json({ error: "Missing Google credential or email" });
+      if (!credential) {
+        res.status(400).json({ error: "Missing Google credential" });
         return;
       }
 
-      if (credential) {
-        const session = await AuthService.verifyGoogleCredential(credential);
-        res.json(session);
-        return;
-      }
-
-      // If called with email/name directly in dev mode
-      const session = await AuthService.demoLogin(email, name);
+      const session = await AuthService.verifyGoogleCredential(credential);
       res.json(session);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);

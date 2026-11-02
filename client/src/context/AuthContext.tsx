@@ -171,6 +171,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!res.ok) {
         throw new Error(data.message || data.error || `Server returned ${res.status}`);
       }
+      if (!data.token || !data.user) {
+        throw new Error("Server did not return an auth session");
+      }
 
       localStorage.setItem("kivo_token", data.token);
       setToken(data.token);

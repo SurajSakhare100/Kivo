@@ -49,67 +49,40 @@ export class AuthService {
     }
   }
 
+  static isGoogleConfigured(): boolean {
+    const id = config.googleClientId;
+    return Boolean(id && id !== "your_google_client_id_here" && id !== "your_google_client_id");
+  }
+
   /**
-   * Verify Google OAuth ID Token or Credential
+   * Verify Google OAuth ID Token from Google Identity Services
    */
   static async verifyGoogleCredential(credential: string): Promise<AuthSessionResponse> {
-    let email = "";
-    let name = "Google User";
-    let picture = "";
-    let sub = "";
-
-    const activeClientId = config.googleClientId;
-
-    if (activeClientId && activeClientId !== "your_google_client_id_here") {
-      try {
-        const googleClient = new OAuth2Client(activeClientId);
-        const ticket = await googleClient.verifyIdToken({
-          idToken: credential,
-          audience: activeClientId,
-        });
-        const payload = ticket.getPayload();
-        if (!payload || !payload.email) {
-          throw new Error("Invalid Google token payload: email is missing.");
-        }
-        email = payload.email;
-        name = payload.name || payload.email.split("@")[0];
-        picture = payload.picture || "";
-        sub = payload.sub;
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.warn(`[Google Auth] Official verification failed: ${msg}`);
-
-        // In non-production, allow fallback decode if token is standard JWT
-        if (config.nodeEnv !== "production") {
-          const decoded = jwt.decode(credential) as Record<string, string> | null;
-          if (decoded && decoded.email) {
-            email = decoded.email;
-            name = decoded.name || decoded.email.split("@")[0];
-            picture = decoded.picture || "";
-            sub = decoded.sub || `google_${Date.now()}`;
-          } else {
-            throw new Error(`Google verification failed: ${msg}`);
-          }
-        } else {
-          throw new Error(`Google token verification failed: ${msg}`);
-        }
-      }
-    } else {
-      // In development when GOOGLE_CLIENT_ID is not yet configured,
-      // decode the JWT payload or provide structured authentication
-      const decoded = jwt.decode(credential) as Record<string, string> | null;
-      if (decoded && decoded.email) {
-        email = decoded.email;
-        name = decoded.name || decoded.email.split("@")[0];
-        picture = decoded.picture || "";
-        sub = decoded.sub || `google_${Date.now()}`;
-      } else {
-        email = "google.user@example.com";
-        name = "Google User";
-        picture = "https://lh3.googleusercontent.com/a/default-user=s96-c";
-        sub = `google_${Date.now()}`;
-      }
+    const idToken = credential.trim();
+    if (!idToken) {
+      throw new Error("Missing Google credential");
     }
+
+    if (!this.isGoogleConfigured()) {
+      throw new Error(
+        "Google Sign-In is not configured. Set GOOGLE_CLIENT_ID (and NEXT_PUBLIC_GOOGLE_CLIENT_ID) to your OAuth client ID."
+      );
+    }
+
+    const googleClient = new OAuth2Client(config.googleClientId);
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: config.googleClientId,
+    });
+    const payload = ticket.getPayload();
+    if (!payload?.email || !payload.sub) {
+      throw new Error("Invalid Google token payload: email is missing.");
+    }
+
+    const email = payload.email;
+    const name = payload.name || email.split("@")[0];
+    const picture = payload.picture || "";
+    const sub = payload.sub;
 
     const userId = `usr_${sub.slice(-12)}`;
     const user: AuthUser = {
