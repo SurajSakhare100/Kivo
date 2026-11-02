@@ -23,8 +23,13 @@ export class AuthController {
       // If called with email/name directly in dev mode
       const session = await AuthService.demoLogin(email, name);
       res.json(session);
-    } catch (err) {
-      next(err);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[Auth] Google Login error:", msg);
+      res.status(401).json({
+        error: "Google authentication failed",
+        message: msg,
+      });
     }
   }
 
@@ -36,8 +41,13 @@ export class AuthController {
       const { email, name } = req.body || {};
       const session = await AuthService.demoLogin(email, name);
       res.json(session);
-    } catch (err) {
-      next(err);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[Auth] Demo Login error:", msg);
+      res.status(400).json({
+        error: "Demo login failed",
+        message: msg,
+      });
     }
   }
 

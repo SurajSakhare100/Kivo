@@ -48,8 +48,8 @@ interface AuthContextType {
   closeLoginModal: () => void;
   openTokenSettings: () => void;
   closeTokenSettings: () => void;
-  loginWithGoogle: (credential: string) => Promise<boolean>;
-  loginDemo: (email?: string, name?: string) => Promise<boolean>;
+  loginWithGoogle: (credential: string) => Promise<{ success: boolean; error?: string }>;
+  loginDemo: (email?: string, name?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshBalance: () => Promise<void>;
   updateTokensLive: (data: Partial<UserTokenProfile>) => void;
@@ -65,7 +65,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE = process.env.NEXT_API_URL || "http://localhost:5000";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.NEXT_API_URL ||
+  "http://localhost:5000";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -155,7 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const loginWithGoogle = useCallback(async (credential: string): Promise<boolean> => {
+  const loginWithGoogle = useCallback(async (credential: string): Promise<{ success: boolean; error?: string }> => {
     try {
       setIsLoading(true);
       const res = await fetch(`${API_BASE}/api/auth/google`, {
@@ -164,24 +167,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ credential }),
       });
 
-      if (!res.ok) throw new Error("Google login failed");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.message || data.error || `Server returned ${res.status}`);
+      }
 
-      const data = await res.json();
       localStorage.setItem("kivo_token", data.token);
       setToken(data.token);
       setUser(data.user);
       setTokens(data.tokens);
       setIsLoginModalOpen(false);
-      return true;
-    } catch (err) {
-      console.error("[Auth] Login with Google error:", err);
-      return false;
+      return { success: true };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Google login failed";
+      console.error("[Auth] Login with Google error:", msg);
+      return { success: false, error: msg };
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  const loginDemo = useCallback(async (email?: string, name?: string): Promise<boolean> => {
+  const loginDemo = useCallback(async (email?: string, name?: string): Promise<{ success: boolean; error?: string }> => {
     try {
       setIsLoading(true);
       const res = await fetch(`${API_BASE}/api/auth/demo`, {
@@ -190,18 +196,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ email, name }),
       });
 
-      if (!res.ok) throw new Error("Demo login failed");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.message || data.error || `Server returned ${res.status}`);
+      }
 
-      const data = await res.json();
       localStorage.setItem("kivo_token", data.token);
       setToken(data.token);
       setUser(data.user);
       setTokens(data.tokens);
       setIsLoginModalOpen(false);
-      return true;
-    } catch (err) {
-      console.error("[Auth] Demo login error:", err);
-      return false;
+      return { success: true };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Demo login failed";
+      console.error("[Auth] Demo login error:", msg);
+      return { success: false, error: msg };
     } finally {
       setIsLoading(false);
     }

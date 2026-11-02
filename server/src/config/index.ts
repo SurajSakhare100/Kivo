@@ -98,7 +98,7 @@ export const config = {
   // Auth & JWT
   jwtSecret: process.env.JWT_SECRET || "kivo_jwt_secret_dev_key_2026_antigravity",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
-  googleClientId: process.env.GOOGLE_CLIENT_ID || "",
+  googleClientId: (process.env.GOOGLE_CLIENT_ID || "").replace(/['"]/g, "").trim(),
   
   // Groq / LLM
   groqApiKey: process.env.GROQ_API_KEY || "",

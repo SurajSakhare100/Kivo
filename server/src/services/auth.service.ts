@@ -3,8 +3,6 @@ import { OAuth2Client } from "google-auth-library";
 import { config } from "../config";
 import { getUserTokenProfile, UserTokenProfile } from "../redis/tokenUsage";
 
-const googleClient = new OAuth2Client(config.googleClientId);
-
 export interface AuthUser {
   id: string;
   email: string;
@@ -60,15 +58,18 @@ export class AuthService {
     let picture = "";
     let sub = "";
 
-    if (config.googleClientId && config.googleClientId !== "your_google_client_id_here") {
+    const activeClientId = config.googleClientId;
+
+    if (activeClientId && activeClientId !== "your_google_client_id_here") {
       try {
+        const googleClient = new OAuth2Client(activeClientId);
         const ticket = await googleClient.verifyIdToken({
           idToken: credential,
-          audience: config.googleClientId,
+          audience: activeClientId,
         });
         const payload = ticket.getPayload();
         if (!payload || !payload.email) {
-          throw new Error("Invalid Google token payload");
+          throw new Error("Invalid Google token payload: email is missing.");
         }
         email = payload.email;
         name = payload.name || payload.email.split("@")[0];
@@ -76,16 +77,21 @@ export class AuthService {
         sub = payload.sub;
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.warn(`[Google Auth] Official verification failed (${msg}), attempting standard decode.`);
-        // Fallback to token payload decode for testing environments
-        const decoded = jwt.decode(credential) as Record<string, string> | null;
-        if (decoded && decoded.email) {
-          email = decoded.email;
-          name = decoded.name || decoded.email.split("@")[0];
-          picture = decoded.picture || "";
-          sub = decoded.sub || `google_${Date.now()}`;
+        console.warn(`[Google Auth] Official verification failed: ${msg}`);
+
+        // In non-production, allow fallback decode if token is standard JWT
+        if (config.nodeEnv !== "production") {
+          const decoded = jwt.decode(credential) as Record<string, string> | null;
+          if (decoded && decoded.email) {
+            email = decoded.email;
+            name = decoded.name || decoded.email.split("@")[0];
+            picture = decoded.picture || "";
+            sub = decoded.sub || `google_${Date.now()}`;
+          } else {
+            throw new Error(`Google verification failed: ${msg}`);
+          }
         } else {
-          throw new Error(`Google verification failed: ${msg}`);
+          throw new Error(`Google token verification failed: ${msg}`);
         }
       }
     } else {
