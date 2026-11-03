@@ -3,19 +3,15 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import {
-  Eye,
-  Code2,
   RefreshCw,
   ExternalLink,
   Monitor,
   Tablet,
   Smartphone,
   AlertTriangle,
-  CheckCircle2,
   Download,
   Loader2,
   Terminal,
-  Save,
   Check,
   Wand2,
   ChevronDown,
@@ -46,6 +42,8 @@ interface PreviewPanelProps {
   onAskAiToFix: (diagnosticMsg: string) => void;
   activeTab?: PanelTab;
   onTabChange?: (tab: PanelTab) => void;
+  viewport?: ViewportMode;
+  onViewportChange?: (v: ViewportMode) => void;
 }
 
 export function PreviewPanel({
@@ -58,12 +56,17 @@ export function PreviewPanel({
   onAskAiToFix,
   activeTab: externalActiveTab,
   onTabChange,
+  viewport: externalViewport,
+  onViewportChange,
 }: PreviewPanelProps) {
   const [internalActiveTab, setInternalActiveTab] = useState<PanelTab>("preview");
   const activeTab = externalActiveTab || internalActiveTab;
   const setActiveTab = onTabChange || setInternalActiveTab;
 
-  const [viewport, setViewport] = useState<ViewportMode>("desktop");
+  const [internalViewport, setInternalViewport] = useState<ViewportMode>("desktop");
+  const viewport = externalViewport || internalViewport;
+  const setViewport = onViewportChange || setInternalViewport;
+
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [isTerminalOpen, setIsTerminalOpen] = useState<boolean>(true);
   const [terminalTab, setTerminalTab] = useState<"kivo" | "publish" | "terminal">("terminal");
@@ -144,147 +147,42 @@ export function PreviewPanel({
 
   return (
     <section className="flex-1 flex flex-col h-full bg-white text-neutral-900 min-w-0">
-      {/* Sub Header Toolbar (White Light Mode) */}
-      <div className="flex h-11 shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-4">
-        {/* Left Tabs */}
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setActiveTab("preview")}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
-              activeTab === "preview"
-                ? "bg-neutral-100 text-neutral-900 shadow-2xs"
-                : "text-neutral-500 hover:text-neutral-800"
-            }`}
-          >
-            <Eye className="w-3.5 h-3.5" />
-            Preview
-          </button>
-          <button
-            onClick={() => setActiveTab("code")}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
-              activeTab === "code"
-                ? "bg-neutral-100 text-neutral-900 shadow-2xs"
-                : "text-neutral-500 hover:text-neutral-800"
-            }`}
-          >
-            <Code2 className="w-3.5 h-3.5" />
-            Code
-          </button>
-          <button
-            onClick={() => setActiveTab("diagnostics")}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
-              activeTab === "diagnostics"
-                ? "bg-neutral-100 text-neutral-900 shadow-2xs"
-                : "text-neutral-500 hover:text-neutral-800"
-            }`}
-          >
-            <Terminal className="w-3.5 h-3.5" />
-            Diagnostics
-            {errorCount > 0 && (
-              <span className="w-4 h-4 rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold flex items-center justify-center">
-                {errorCount}
+      {/* Sub Header Toolbar only when in Code mode */}
+      {activeTab === "code" && (
+        <div className="flex h-11 shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-4">
+          <div className="flex items-center gap-1.5 text-xs font-mono text-neutral-600 bg-neutral-100/70 border border-neutral-200/80 px-2.5 py-1 rounded-lg">
+            <FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+            {activeFile.split("/").map((segment, idx, arr) => (
+              <React.Fragment key={idx}>
+                <span className={idx === arr.length - 1 ? "font-semibold text-neutral-900" : "text-neutral-500"}>
+                  {segment}
+                </span>
+                {idx < arr.length - 1 && <span className="text-neutral-300">&gt;</span>}
+              </React.Fragment>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-3">
+            {saveStatus === "saving" && (
+              <span className="text-[10px] text-neutral-500 flex items-center gap-1">
+                <Loader2 className="w-3 h-3 animate-spin" /> Saving
               </span>
             )}
-          </button>
+            {saveStatus === "saved" && (
+              <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+                <Check className="w-3 h-3" /> Saved
+              </span>
+            )}
+            <button
+              onClick={handleDownloadFile}
+              title="Download current file"
+              className="p-1.5 rounded-lg border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50 transition cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
-
-        {/* Right Action Controls */}
-        <div className="flex items-center gap-2">
-          {activeTab === "preview" && (
-            <>
-              {/* Responsive Viewport Switcher */}
-              <div className="flex items-center bg-neutral-100 border border-neutral-200 rounded-lg p-0.5">
-                <button
-                  onClick={() => setViewport("desktop")}
-                  title="Desktop (100%)"
-                  className={`p-1.5 rounded transition ${
-                    viewport === "desktop"
-                      ? "bg-white text-neutral-900 shadow-2xs"
-                      : "text-neutral-500 hover:text-neutral-800"
-                  }`}
-                >
-                  <Monitor className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setViewport("tablet")}
-                  title="Tablet (768px)"
-                  className={`p-1.5 rounded transition ${
-                    viewport === "tablet"
-                      ? "bg-white text-neutral-900 shadow-2xs"
-                      : "text-neutral-500 hover:text-neutral-800"
-                  }`}
-                >
-                  <Tablet className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setViewport("mobile")}
-                  title="Mobile (375px)"
-                  className={`p-1.5 rounded transition ${
-                    viewport === "mobile"
-                      ? "bg-white text-neutral-900 shadow-2xs"
-                      : "text-neutral-500 hover:text-neutral-800"
-                  }`}
-                >
-                  <Smartphone className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {/* Refresh Button */}
-              <button
-                onClick={handleRefresh}
-                title="Refresh preview"
-                className="p-1.5 rounded-lg border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50 transition"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-              </button>
-
-              {/* Open in New Window */}
-              <button
-                onClick={handleOpenNewWindow}
-                title="Open in new window"
-                className="p-1.5 rounded-lg border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50 transition"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-              </button>
-            </>
-          )}
-
-          {activeTab === "code" && (
-            <div className="flex items-center gap-3">
-              {/* Breadcrumb matching Image 1: src > App.tsx */}
-              <div className="flex items-center gap-1.5 text-xs font-mono text-neutral-600 bg-neutral-100/70 border border-neutral-200/80 px-2.5 py-1 rounded-lg">
-                <FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                {activeFile.split("/").map((segment, idx, arr) => (
-                  <React.Fragment key={idx}>
-                    <span className={idx === arr.length - 1 ? "font-semibold text-neutral-900" : "text-neutral-500"}>
-                      {segment}
-                    </span>
-                    {idx < arr.length - 1 && <span className="text-neutral-300">&gt;</span>}
-                  </React.Fragment>
-                ))}
-              </div>
-
-              {saveStatus === "saving" && (
-                <span className="text-[10px] text-neutral-500 flex items-center gap-1">
-                  <Loader2 className="w-3 h-3 animate-spin" /> Saving
-                </span>
-              )}
-              {saveStatus === "saved" && (
-                <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
-                  <Check className="w-3 h-3" /> Saved
-                </span>
-              )}
-              <button
-                onClick={handleDownloadFile}
-                title="Download current file"
-                className="p-1.5 rounded-lg border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50 transition cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Main Content Area */}
       <div className="flex-1 relative overflow-hidden bg-neutral-100 flex flex-col min-h-0">
@@ -450,67 +348,6 @@ export function PreviewPanel({
                 </div>
               )}
             </div>
-          </div>
-        )}
-
-        {/* Tab 3: Diagnostics Panel */}
-        {activeTab === "diagnostics" && (
-          <div className="flex-1 p-4 overflow-y-auto space-y-3 font-mono text-xs bg-white">
-            <div className="flex items-center justify-between pb-2 border-b border-neutral-200">
-              <span className="text-neutral-500 text-xs">
-                {diagnostics.length} diagnostic items reported
-              </span>
-              {diagnostics.length > 0 && (
-                <button
-                  onClick={onClearDiagnostics}
-                  className="text-neutral-500 hover:text-neutral-900 text-[10px]"
-                >
-                  Clear all
-                </button>
-              )}
-            </div>
-
-            {diagnostics.length === 0 ? (
-              <div className="py-12 text-center text-neutral-500 flex flex-col items-center gap-2">
-                <CheckCircle2 className="w-8 h-8 text-emerald-600" />
-                <span>All diagnostics clean. No runtime or bundler errors detected.</span>
-              </div>
-            ) : (
-              diagnostics.map((diag) => (
-                <div
-                  key={diag.id}
-                  className={`p-3 rounded-xl border ${
-                    diag.type === "error"
-                      ? "bg-rose-50 border-rose-200 text-rose-800"
-                      : "bg-amber-50 border-amber-200 text-amber-800"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="uppercase text-[9px] font-bold tracking-wider px-1.5 py-0.2 rounded bg-white border border-neutral-200">
-                      {diag.type} • {diag.source || "runtime"}
-                    </span>
-                    <span className="text-[10px] text-neutral-400">
-                      {new Date(diag.timestamp).toLocaleTimeString()}
-                    </span>
-                  </div>
-                  <div className="text-xs break-all">{diag.message}</div>
-                  {diag.file && (
-                    <div className="mt-1 text-[10px] text-neutral-500">
-                      File: {diag.file} {diag.line ? `:${diag.line}` : ""}
-                    </div>
-                  )}
-                  <div className="mt-2 flex justify-end">
-                    <button
-                      onClick={() => onAskAiToFix(diag.message)}
-                      className="text-[10px] bg-rose-600 text-white px-2 py-0.5 rounded-lg hover:bg-rose-700 transition flex items-center gap-1 font-sans font-semibold"
-                    >
-                      <Wand2 className="w-3 h-3" />
-                      Fix with AI
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
           </div>
         )}
       </div>

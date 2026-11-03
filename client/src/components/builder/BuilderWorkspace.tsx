@@ -15,6 +15,9 @@ import {
   Check,
   Zap,
   LogOut,
+  Monitor,
+  Tablet,
+  Smartphone,
 } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { ChatPanel } from "./ChatPanel";
@@ -24,6 +27,7 @@ import {
   Project,
   ProjectType,
   FilesMap,
+  ViewportMode,
   ChatMessage,
   ProjectCheckpoint,
   ChatStatus,
@@ -71,6 +75,7 @@ export default function BuilderWorkspace({ initialProjectId }: { initialProjectI
 
   // View toggle: "preview" or "code" (Image 3)
   const [viewMode, setViewMode] = useState<"preview" | "code">("preview");
+  const [viewport, setViewport] = useState<ViewportMode>("desktop");
 
   // Chat & AI State
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -568,11 +573,10 @@ export default function BuilderWorkspace({ initialProjectId }: { initialProjectI
         <div className="flex items-center rounded-xl border border-neutral-200 bg-neutral-100 p-0.5 text-xs font-semibold shadow-2xs">
           <button
             onClick={() => setViewMode("preview")}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition cursor-pointer ${
-              viewMode === "preview"
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition cursor-pointer ${viewMode === "preview"
                 ? "bg-white text-neutral-900 shadow-2xs"
                 : "text-neutral-500 hover:text-neutral-900"
-            }`}
+              }`}
           >
             <Eye className="h-3.5 w-3.5" />
             <span>Preview</span>
@@ -580,77 +584,69 @@ export default function BuilderWorkspace({ initialProjectId }: { initialProjectI
 
           <button
             onClick={() => setViewMode("code")}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition cursor-pointer ${
-              viewMode === "code"
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition cursor-pointer ${viewMode === "code"
                 ? "bg-white text-neutral-900 shadow-2xs"
                 : "text-neutral-500 hover:text-neutral-900"
-            }`}
+              }`}
           >
             <Code2 className="h-3.5 w-3.5" />
             <span>Code</span>
           </button>
 
-          <button
-            onClick={openTokenSettings}
-            className="p-1.5 text-neutral-400 hover:text-neutral-700 rounded-lg transition cursor-pointer"
-            title="Project & Token Settings"
-          >
-            <Settings className="h-3.5 w-3.5" />
-          </button>
+
         </div>
 
-        {/* Right: GitHub, Upgrade, Share, Publish button */}
+        {/* Top Right: Viewport Sizes & External Link Icon (Replaces Upgrade/Publish line) */}
         <div className="flex items-center gap-2">
-          <a
-            href="https://github.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-1.5 rounded-lg border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50 transition"
-            title="GitHub Repository"
-          >
-            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-              <path
-                fillRule="evenodd"
-                d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </a>
+          {/* Responsive Viewport Switcher */}
+          <div className="flex items-center bg-neutral-100 border border-neutral-200 rounded-lg p-0.5">
+            <button
+              onClick={() => setViewport("desktop")}
+              title="Desktop"
+              className={`p-1.5 rounded transition cursor-pointer ${viewport === "desktop"
+                  ? "bg-white text-neutral-900 shadow-2xs"
+                  : "text-neutral-500 hover:text-neutral-800"
+                }`}
+            >
+              <Monitor className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => setViewport("tablet")}
+              title="Tablet"
+              className={`p-1.5 rounded transition cursor-pointer ${viewport === "tablet"
+                  ? "bg-white text-neutral-900 shadow-2xs"
+                  : "text-neutral-500 hover:text-neutral-800"
+                }`}
+            >
+              <Tablet className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => setViewport("mobile")}
+              title="Mobile"
+              className={`p-1.5 rounded transition cursor-pointer ${viewport === "mobile"
+                  ? "bg-white text-neutral-900 shadow-2xs"
+                  : "text-neutral-500 hover:text-neutral-800"
+                }`}
+            >
+              <Smartphone className="h-3.5 w-3.5" />
+            </button>
+          </div>
 
-          <button
-            onClick={openTokenSettings}
-            className="hidden md:inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-neutral-200 bg-white text-xs font-semibold text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 transition cursor-pointer shadow-2xs"
-          >
-            Upgrade
-          </button>
-
+          {/* External Link Icon */}
           <button
             onClick={() => {
-              if (typeof window !== "undefined") {
-                navigator.clipboard.writeText(window.location.href);
-                alert("Project link copied to clipboard!");
+              try {
+                sessionStorage.setItem("kivo_preview_files", JSON.stringify(files));
+                localStorage.setItem("kivo_preview_files", JSON.stringify(files));
+              } catch (e) {
+                console.warn("Storage sync error:", e);
               }
+              window.open("/preview", "_blank");
             }}
-            className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-neutral-200 bg-white text-xs font-semibold text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 transition cursor-pointer shadow-2xs"
+            title="Open preview in new window"
+            className="p-1.5 rounded-lg border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50 transition cursor-pointer shadow-2xs"
           >
-            <Share2 className="h-3 w-3" />
-            <span>Share</span>
-          </button>
-
-          <button
-            onClick={() => {
-              const zipName = `${activeProject?.name || "project"}.json`;
-              const blob = new Blob([JSON.stringify(files, null, 2)], { type: "application/json" });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = zipName;
-              a.click();
-              URL.revokeObjectURL(url);
-            }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-xs font-semibold text-white shadow-xs transition active:scale-98 cursor-pointer"
-          >
-            <span>Publish</span>
+            <ExternalLink className="h-3.5 w-3.5" />
           </button>
         </div>
       </header>
@@ -704,6 +700,8 @@ export default function BuilderWorkspace({ initialProjectId }: { initialProjectI
                   onAskAiToFix={(err) => handleSendMessage(`Fix this error: ${err}`)}
                   activeTab="code"
                   onTabChange={(t) => setViewMode(t === "preview" ? "preview" : "code")}
+                  viewport={viewport}
+                  onViewportChange={setViewport}
                 />
               </div>
             </div>
@@ -719,6 +717,8 @@ export default function BuilderWorkspace({ initialProjectId }: { initialProjectI
                 onAskAiToFix={(err) => handleSendMessage(`Fix this error: ${err}`)}
                 activeTab="preview"
                 onTabChange={(t) => setViewMode(t === "preview" ? "preview" : "code")}
+                viewport={viewport}
+                onViewportChange={setViewport}
               />
             </div>
           )}

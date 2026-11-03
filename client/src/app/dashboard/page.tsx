@@ -37,10 +37,12 @@ import { useAuth } from "@/context/AuthContext";
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialTab = searchParams.get("tab") === "projects" ? "projects" : "home";
+  const rawTab = searchParams.get("tab");
+  const initialTab: "home" | "projects" | "starred" | "recent" | "settings" =
+    rawTab === "projects" ? "projects" : rawTab === "settings" ? "settings" : "home";
 
-  const { user, tokens, isAuthenticated, openLoginModal, openTokenSettings, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<"home" | "projects" | "starred" | "recent">(initialTab);
+  const { user, tokens, isAuthenticated, openLoginModal, logout, refillTokens, updateDummySettings } = useAuth();
+  const [activeTab, setActiveTab] = useState<"home" | "projects" | "starred" | "recent" | "settings">(initialTab);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isTopProfileOpen, setIsTopProfileOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -200,7 +202,7 @@ function DashboardContent() {
                 <button
                   onClick={() => {
                     setIsProfileMenuOpen(false);
-                    openTokenSettings();
+                    setActiveTab("settings");
                   }}
                   className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-neutral-700 hover:bg-neutral-100 transition cursor-pointer mt-1"
                 >
@@ -226,11 +228,10 @@ function DashboardContent() {
           <nav className="space-y-1 text-[13px] font-medium">
             <button
               onClick={() => setActiveTab("home")}
-              className={`w-full flex items-center gap-2.5 rounded-xl px-3 py-2 transition text-left cursor-pointer ${
-                activeTab === "home"
+              className={`w-full flex items-center gap-2.5 rounded-xl px-3 py-2 transition text-left cursor-pointer ${activeTab === "home"
                   ? "bg-neutral-200/70 text-neutral-900 font-semibold shadow-2xs"
                   : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
-              }`}
+                }`}
             >
               <HomeIcon className="h-4 w-4" />
               <span>Home</span>
@@ -238,11 +239,10 @@ function DashboardContent() {
 
             <button
               onClick={() => setActiveTab("projects")}
-              className={`w-full flex items-center justify-between rounded-xl px-3 py-2 transition text-left cursor-pointer ${
-                activeTab === "projects"
+              className={`w-full flex items-center justify-between rounded-xl px-3 py-2 transition text-left cursor-pointer ${activeTab === "projects"
                   ? "bg-neutral-200/70 text-neutral-900 font-semibold shadow-2xs"
                   : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
-              }`}
+                }`}
             >
               <div className="flex items-center gap-2.5">
                 <LayoutGrid className="h-4 w-4" />
@@ -253,11 +253,10 @@ function DashboardContent() {
 
             <button
               onClick={() => setActiveTab("starred")}
-              className={`w-full flex items-center gap-2.5 rounded-xl px-3 py-2 transition text-left cursor-pointer ${
-                activeTab === "starred"
+              className={`w-full flex items-center gap-2.5 rounded-xl px-3 py-2 transition text-left cursor-pointer ${activeTab === "starred"
                   ? "bg-neutral-200/70 text-neutral-900 font-semibold"
                   : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
-              }`}
+                }`}
             >
               <Star className="h-4 w-4" />
               <span>Starred</span>
@@ -265,20 +264,22 @@ function DashboardContent() {
 
             <button
               onClick={() => setActiveTab("recent")}
-              className={`w-full flex items-center gap-2.5 rounded-xl px-3 py-2 transition text-left cursor-pointer ${
-                activeTab === "recent"
+              className={`w-full flex items-center gap-2.5 rounded-xl px-3 py-2 transition text-left cursor-pointer ${activeTab === "recent"
                   ? "bg-neutral-200/70 text-neutral-900 font-semibold"
                   : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
-              }`}
+                }`}
             >
               <Clock className="h-4 w-4" />
               <span>Recently viewed</span>
             </button>
 
-            {/* Switched "Shared with you" with "Settings" */}
+            {/* Settings Tab Navigation */}
             <button
-              onClick={openTokenSettings}
-              className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition text-left cursor-pointer"
+              onClick={() => setActiveTab("settings")}
+              className={`w-full flex items-center gap-2.5 rounded-xl px-3 py-2 transition text-left cursor-pointer ${activeTab === "settings"
+                  ? "bg-neutral-200/70 text-neutral-900 font-semibold shadow-2xs"
+                  : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+                }`}
             >
               <Settings className="h-4 w-4" />
               <span>Settings</span>
@@ -310,14 +311,17 @@ function DashboardContent() {
         <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-200/80 px-6 sm:px-8 bg-white/80 backdrop-blur-md sticky top-0 z-20">
           <div className="flex items-center gap-6">
             <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
-              {activeTab === "projects" ? "Workspace" : "Dashboard"}
+              {activeTab === "projects" ? "Workspace" : activeTab === "settings" ? "Settings" : "Dashboard"}
             </span>
           </div>
 
           <div className="flex items-center gap-2 relative">
             <button
-              onClick={openTokenSettings}
-              className="p-2 rounded-xl text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 transition cursor-pointer"
+              onClick={() => setActiveTab("settings")}
+              className={`p-2 rounded-xl transition cursor-pointer ${activeTab === "settings"
+                  ? "bg-neutral-200 text-neutral-900"
+                  : "text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100"
+                }`}
               title="Settings"
             >
               <Settings className="h-4 w-4" />
@@ -350,7 +354,7 @@ function DashboardContent() {
                     <button
                       onClick={() => {
                         setIsTopProfileOpen(false);
-                        openTokenSettings();
+                        setActiveTab("settings");
                       }}
                       className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-neutral-700 hover:bg-neutral-100 transition cursor-pointer mt-1"
                     >
@@ -505,7 +509,7 @@ function DashboardContent() {
 
               <button
                 onClick={() => handleStartProject()}
-                className="inline-flex h-9 items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 px-4 text-xs font-semibold text-white shadow-xs transition active:scale-98 cursor-pointer"
+                className="inline-flex h-9 items-center gap-2 rounded-xl bg-black hover:bg-black-700 px-4 text-xs font-semibold text-white shadow-xs transition active:scale-98 cursor-pointer"
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span>Create project</span>
@@ -611,6 +615,131 @@ function DashboardContent() {
             >
               Browse all projects
             </button>
+          </div>
+        )}
+
+        {/* ─── TAB 4: SIMPLE SETTINGS PAGE (Replaces Modal) ─── */}
+        {activeTab === "settings" && (
+          <div className="flex-1 p-6 sm:p-10 max-w-4xl mx-auto w-full space-y-8 animate-in fade-in duration-200">
+            {/* Header */}
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
+                Workspace Settings
+              </h2>
+              <p className="text-xs text-neutral-500 mt-1">
+                Manage your account identity, AI generation tokens, and developer preferences.
+              </p>
+            </div>
+
+            {/* Profile Section */}
+            <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-5">
+              <h3 className="text-sm font-bold text-neutral-900">Account Identity</h3>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="h-12 w-12 rounded-full bg-fuchsia-600 text-white font-bold text-base flex items-center justify-center shrink-0 shadow-sm">
+                    {userName.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-neutral-900">
+                      {user?.name || `${userName}'s Workspace`}
+                    </h4>
+                    <p className="text-xs text-neutral-500">
+                      {user?.email || "Google Account (Unified Auth)"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
+                    Google OAuth Active
+                  </span>
+                  <button
+                    onClick={() => logout()}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-neutral-200 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                    <span>Sign out</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Generation Allowance Section */}
+            <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-neutral-900">AI Generation Allowance</h3>
+                  <p className="text-xs text-neutral-500 mt-0.5">
+                    Monthly token budget for streaming React applications.
+                  </p>
+                </div>
+                <span className="text-xs font-bold text-neutral-700 bg-neutral-100 px-2.5 py-1 rounded-full">
+                  Free Explorer Plan
+                </span>
+              </div>
+
+              {/* Progress meter */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs font-medium">
+                  <span className="text-neutral-600">Available Balance</span>
+                  <span className="text-neutral-900 font-semibold tabular-nums">
+                    {tokensRemaining.toLocaleString()} / {(tokens?.tokenLimit ?? 50000).toLocaleString()}
+                  </span>
+                </div>
+                <div className="h-2.5 w-full rounded-full bg-neutral-100 overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                    style={{
+                      width: `${Math.max(4, Math.min(100, (tokensRemaining / (tokens?.tokenLimit ?? 50000)) * 100))}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <button
+                  onClick={async () => {
+                    await refillTokens(50000);
+                    alert("Added +50,000 generation allowance!");
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs font-semibold text-white shadow-xs transition active:scale-98 cursor-pointer"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+                  <span>Refill Allowance (+50k)</span>
+                </button>
+                <button
+                  onClick={async () => {
+                    await updateDummySettings({ resetUsage: true });
+                    alert("Reset generation usage to 0!");
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 text-xs font-semibold text-neutral-700 shadow-2xs transition active:scale-98 cursor-pointer"
+                >
+                  <span>Reset Usage</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Developer & Workspace Preferences */}
+            <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
+              <h3 className="text-sm font-bold text-neutral-900">Workspace Preferences</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div className="p-3.5 rounded-xl border border-neutral-200/80 bg-neutral-50/50">
+                  <p className="font-semibold text-neutral-800">Editor Theme</p>
+                  <p className="text-neutral-500 text-[11px] mt-0.5">Monaco VS Light Mode</p>
+                </div>
+                <div className="p-3.5 rounded-xl border border-neutral-200/80 bg-neutral-50/50">
+                  <p className="font-semibold text-neutral-800">Code Sandbox</p>
+                  <p className="text-neutral-500 text-[11px] mt-0.5">Client-side Babel & Tailwind HMR</p>
+                </div>
+                <div className="p-3.5 rounded-xl border border-neutral-200/80 bg-neutral-50/50">
+                  <p className="font-semibold text-neutral-800">Local Database</p>
+                  <p className="text-neutral-500 text-[11px] mt-0.5">IndexedDB Persistent Storage</p>
+                </div>
+                <div className="p-3.5 rounded-xl border border-neutral-200/80 bg-neutral-50/50">
+                  <p className="font-semibold text-neutral-800">Security Isolation</p>
+                  <p className="text-neutral-500 text-[11px] mt-0.5">COOP & COEP Sandbox Headers</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </main>

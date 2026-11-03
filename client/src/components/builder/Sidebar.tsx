@@ -8,21 +8,14 @@ import {
   FileText,
   Plus,
   Trash2,
-  RotateCcw,
-  History,
   ChevronDown,
   ChevronRight,
-  LogOut,
-  Settings,
   Globe,
-  User,
   FilePlus,
   FolderPlus,
   AlertCircle,
-  Search,
 } from "lucide-react";
 import { FilesMap, ProjectCheckpoint } from "@/types/builder";
-import { useAuth } from "@/context/AuthContext";
 
 interface SidebarProps {
   files: FilesMap;
@@ -96,11 +89,6 @@ export function Sidebar({
   onRestoreCheckpoint,
   onUndoLastCheckpoint,
 }: SidebarProps) {
-  const { user, isAuthenticated, openTokenSettings, openLoginModal, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<"files" | "search" | "history">("files");
-  const [fileSearch, setFileSearch] = useState("");
-  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
-
   // File and Folder Creation state
   const [createMode, setCreateMode] = useState<"none" | "file" | "folder">("none");
   const [targetParentFolder, setTargetParentFolder] = useState<string>("");
@@ -302,111 +290,33 @@ export function Sidebar({
 
   return (
     <aside className="w-56 border-r border-neutral-200 bg-[#fafafa] flex flex-col h-full shrink-0 select-none text-neutral-900">
-      {/* Nav Tabs matching Image 1: Files, Search, History */}
-      <div className="flex border-b border-neutral-200 p-1 bg-white">
-        <button
-          onClick={() => setActiveTab("files")}
-          className={`flex-1 py-1.5 text-[11px] font-semibold rounded-lg transition flex items-center justify-center gap-1 cursor-pointer ${
-            activeTab === "files"
-              ? "bg-neutral-100 text-neutral-900 shadow-2xs"
-              : "text-neutral-500 hover:text-neutral-800"
-          }`}
-        >
-          <FolderOpen className="w-3.5 h-3.5" />
+      {/* Sidebar Header: Files */}
+      <div className="flex items-center justify-between border-b border-neutral-200 px-3 py-2 bg-white">
+        <span className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider flex items-center gap-1.5">
+          <FolderOpen className="w-3.5 h-3.5 text-neutral-400" />
           Files
-        </button>
-        <button
-          onClick={() => setActiveTab("search")}
-          className={`flex-1 py-1.5 text-[11px] font-semibold rounded-lg transition flex items-center justify-center gap-1 cursor-pointer ${
-            activeTab === "search"
-              ? "bg-neutral-100 text-neutral-900 shadow-2xs"
-              : "text-neutral-500 hover:text-neutral-800"
-          }`}
-        >
-          <Search className="w-3.5 h-3.5" />
-          Search
-        </button>
-        <button
-          onClick={() => setActiveTab("history")}
-          className={`px-2 py-1.5 text-[11px] font-semibold rounded-lg transition flex items-center justify-center gap-1 cursor-pointer ${
-            activeTab === "history"
-              ? "bg-neutral-100 text-neutral-900 shadow-2xs"
-              : "text-neutral-500 hover:text-neutral-800"
-          }`}
-          title="Version Checkpoints"
-        >
-          <History className="w-3.5 h-3.5" />
-          {checkpoints.length > 0 && (
-            <span className="px-1 text-[9px] rounded-full bg-neutral-200 text-neutral-700 font-bold">
-              {checkpoints.length}
-            </span>
-          )}
-        </button>
+        </span>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => handleStartCreate("file", "")}
+            title="Create new file in root"
+            className="hover:text-neutral-900 p-1 rounded hover:bg-neutral-100 transition text-neutral-400 cursor-pointer"
+          >
+            <FilePlus className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => handleStartCreate("folder", "")}
+            title="Create new folder in root"
+            className="hover:text-neutral-900 p-1 rounded hover:bg-neutral-100 transition text-neutral-400 cursor-pointer"
+          >
+            <FolderPlus className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* Tab Content */}
       <div className="flex-1 overflow-y-auto p-2">
-        {activeTab === "search" && (
-          <div className="space-y-2">
-            <div className="relative">
-              <input
-                type="text"
-                value={fileSearch}
-                onChange={(e) => setFileSearch(e.target.value)}
-                placeholder="Search file names..."
-                className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs text-neutral-800 placeholder-neutral-400 outline-none focus:border-neutral-400"
-              />
-              {fileSearch && (
-                <button
-                  onClick={() => setFileSearch("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 text-xs"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-
-            <div className="space-y-0.5 pt-1">
-              {Object.keys(files)
-                .filter((p) => p.toLowerCase().includes(fileSearch.toLowerCase()))
-                .map((path) => (
-                  <button
-                    key={path}
-                    onClick={() => onSelectFile(path)}
-                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-left transition truncate cursor-pointer ${
-                      activeFile === path
-                        ? "bg-blue-50 text-blue-700 font-semibold"
-                        : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
-                    }`}
-                  >
-                    {renderFileIcon(path)}
-                    <span className="truncate">{path}</span>
-                  </button>
-                ))}
-            </div>
-          </div>
-        )}
-        {activeTab === "files" && (
-          <div className="space-y-1">
-            <div className="flex items-center justify-between px-2 py-1 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
-              <span className="truncate">Files</span>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => handleStartCreate("file", "")}
-                  title="Create new file in root"
-                  className="hover:text-neutral-900 p-1 rounded hover:bg-neutral-100 transition text-neutral-400"
-                >
-                  <FilePlus className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => handleStartCreate("folder", "")}
-                  title="Create new folder in root"
-                  className="hover:text-neutral-900 p-1 rounded hover:bg-neutral-100 transition text-neutral-400"
-                >
-                  <FolderPlus className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
+        <div className="space-y-1">
 
             {/* Inline file/folder creator */}
             {createMode !== "none" && (
@@ -464,141 +374,7 @@ export function Sidebar({
               {renderTree(treeNodes)}
             </div>
           </div>
-        )}
-
-        {activeTab === "history" && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
-                Checkpoints
-              </span>
-              <button
-                onClick={onUndoLastCheckpoint}
-                disabled={checkpoints.length < 2}
-                className="text-[10px] flex items-center gap-1 text-emerald-400 hover:text-emerald-300 disabled:opacity-40 disabled:hover:text-emerald-400 transition"
-              >
-                <RotateCcw className="w-3 h-3" />
-                Undo Last
-              </button>
-            </div>
-
-            {checkpoints.length === 0 ? (
-              <div className="text-center py-8 text-neutral-600 text-xs">
-                No checkpoints saved yet. Checkpoints are automatically created before AI edits.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {checkpoints.map((cp, idx) => (
-                  <div
-                    key={cp.id}
-                    className="p-2.5 rounded-lg border border-neutral-800 bg-neutral-900/40 hover:border-neutral-700 transition space-y-1.5"
-                  >
-                    <div className="flex items-center justify-between text-[10px] text-neutral-500">
-                      <span>{new Date(cp.createdAt).toLocaleTimeString()}</span>
-                      {idx === 0 && (
-                        <span className="px-1.5 py-0.2 rounded bg-neutral-800 text-neutral-400">
-                          Current
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-neutral-300 line-clamp-2 leading-relaxed">
-                      {cp.summary}
-                    </p>
-                    <button
-                      onClick={() => onRestoreCheckpoint(cp.id)}
-                      className="text-[10px] text-emerald-400 hover:underline flex items-center gap-1 font-medium pt-1"
-                    >
-                      <RotateCcw className="w-2.5 h-2.5" />
-                      Restore this snapshot
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Account menu */}
-      <div className="relative mt-auto border-t border-neutral-800 p-2.5">
-        {isAccountMenuOpen && (
-          <>
-            <button
-              type="button"
-              aria-label="Close account menu"
-              className="fixed inset-0 z-30 cursor-default"
-              onClick={() => setIsAccountMenuOpen(false)}
-            />
-            <div className="absolute bottom-[calc(100%-4px)] left-2 right-2 z-40 rounded-xl border border-neutral-800 bg-[#111114] p-1.5 shadow-xl">
-              {isAuthenticated && user && (
-                <div className="border-b border-neutral-800 px-2.5 py-2">
-                  <p className="truncate text-xs font-medium text-white">{user.name}</p>
-                  <p className="truncate text-[10px] text-neutral-500">{user.email}</p>
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsAccountMenuOpen(false);
-                  openTokenSettings();
-                }}
-                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
-              >
-                <Settings className="h-3.5 w-3.5 text-neutral-400" />
-                Settings
-              </button>
-              {isAuthenticated ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsAccountMenuOpen(false);
-                    void logout();
-                  }}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
-                >
-                  <LogOut className="h-3.5 w-3.5 text-neutral-400" />
-                  Log out
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsAccountMenuOpen(false);
-                    openLoginModal();
-                  }}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
-                >
-                  <User className="h-3.5 w-3.5 text-neutral-400" />
-                  Sign in
-                </button>
-              )}
-            </div>
-          </>
-        )}
-        <button
-          type="button"
-          aria-expanded={isAccountMenuOpen}
-          onClick={() => setIsAccountMenuOpen((open) => !open)}
-          className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition hover:bg-neutral-900"
-        >
-          {isAuthenticated && user?.picture ? (
-            <img
-              src={user.picture}
-              alt=""
-              className="h-7 w-7 rounded-full border border-neutral-700 object-cover"
-              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-            />
-          ) : (
-            <span className="flex h-7 w-7 items-center justify-center rounded-full border border-neutral-700 bg-neutral-900 text-neutral-400">
-              <User className="h-3.5 w-3.5" />
-            </span>
-          )}
-          <span className="min-w-0 flex-1 truncate text-xs font-medium text-neutral-200">
-            {isAuthenticated && user ? user.name : "Guest"}
-          </span>
-          <ChevronDown className={`h-3.5 w-3.5 text-neutral-500 transition ${isAccountMenuOpen ? "rotate-180" : ""}`} />
-        </button>
-      </div>
-    </aside>
-  );
-}
+        </div>
+      </aside>
+    );
+  }
