@@ -1,14 +1,16 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Syne:wght@700;800;900&display=swap");
 @import "tailwindcss";
 
 :root {
-  color-scheme: dark;
-  --background: #050505;
-  --foreground: #f5f5f5;
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: #09090b;
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --color-primary: #ffffff;
-  --color-primary-dark: #d4d4d4;
-  --color-surface: #050505;
+  --font-creative: "Syne", sans-serif;
+  --color-primary: #09090b;
+  --color-primary-dark: #18181b;
+  --color-surface: #ffffff;
+  --color-accent: #10b981;
 }
 
 * {
@@ -42,13 +44,13 @@ a:focus-visible,
 textarea:focus-visible,
 input:focus-visible,
 select:focus-visible {
-  outline: 2px solid #a3a3a3;
+  outline: 2px solid #18181b;
   outline-offset: 2px;
 }
 
 ::selection {
-  background: #10b981;
-  color: #050505;
+  background: #10b98122;
+  color: #047857;
 }
 
 ::-webkit-scrollbar {
@@ -62,9 +64,65 @@ select:focus-visible {
 
 ::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: #292929;
+  background: #e4e4e7;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #404040;
+  background: #d4d4d8;
+}
+
+/* Reveal animations */
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes reveal-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes float-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.animate-reveal-up {
+  animation: reveal-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-reveal-scale {
+  animation: reveal-scale 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.font-kivo {
+  font-family: var(--font-creative), sans-serif;
+}
+
+/* Staggered delays for children */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-reveal-up,
+  .animate-reveal-scale,
+  .animate-float-subtle {
+    animation: none;
+  }
 }

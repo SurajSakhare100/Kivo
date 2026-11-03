@@ -12,8 +12,8 @@ export default function BuilderPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-screen w-screen items-center justify-center bg-[#09090b] text-neutral-400">
-          <Loader2 className="h-6 w-6 animate-spin text-emerald-400" />
+        <div className="flex h-screen w-screen items-center justify-center bg-white text-neutral-400">
+          <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
         </div>
       }
     >

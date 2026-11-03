@@ -18,6 +18,9 @@ import {
   Save,
   Check,
   Wand2,
+  ChevronDown,
+  FileText,
+  Zap,
 } from "lucide-react";
 import { FilesMap, ViewportMode, PanelTab, DiagnosticItem } from "@/types/builder";
 import { generatePreviewHtml } from "@/lib/runtime/bundler";
@@ -26,7 +29,7 @@ import { generatePreviewHtml } from "@/lib/runtime/bundler";
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-full items-center justify-center bg-[#1e1e1e] text-neutral-500 text-xs">
+    <div className="flex h-full items-center justify-center bg-white text-neutral-400 text-xs">
       <Loader2 className="w-4 h-4 animate-spin mr-2" />
       Loading Editor...
     </div>
@@ -41,6 +44,8 @@ interface PreviewPanelProps {
   onAddDiagnostic: (item: DiagnosticItem) => void;
   onClearDiagnostics: () => void;
   onAskAiToFix: (diagnosticMsg: string) => void;
+  activeTab?: PanelTab;
+  onTabChange?: (tab: PanelTab) => void;
 }
 
 export function PreviewPanel({
@@ -51,10 +56,17 @@ export function PreviewPanel({
   onAddDiagnostic,
   onClearDiagnostics,
   onAskAiToFix,
+  activeTab: externalActiveTab,
+  onTabChange,
 }: PreviewPanelProps) {
-  const [activeTab, setActiveTab] = useState<PanelTab>("preview");
+  const [internalActiveTab, setInternalActiveTab] = useState<PanelTab>("preview");
+  const activeTab = externalActiveTab || internalActiveTab;
+  const setActiveTab = onTabChange || setInternalActiveTab;
+
   const [viewport, setViewport] = useState<ViewportMode>("desktop");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [isTerminalOpen, setIsTerminalOpen] = useState<boolean>(true);
+  const [terminalTab, setTerminalTab] = useState<"kivo" | "publish" | "terminal">("terminal");
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -104,45 +116,44 @@ export function PreviewPanel({
     saveTimeoutRef.current = setTimeout(() => {
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 1500);
-    }, 400);
+    }, 500);
   };
 
   const handleDownloadFile = () => {
-    const content = files[activeFile] || "";
-    const fileName = activeFile.split("/").pop() || "file.txt";
+    const content = files[activeFile];
+    if (!content) return;
     const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = fileName;
-    link.click();
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = activeFile.split("/").pop() || "code.txt";
+    a.click();
     URL.revokeObjectURL(url);
   };
 
-  // Determine Monaco language mode from file extension
-  const getLanguage = (path: string) => {
+  const getLanguage = (path: string): string => {
     if (path.endsWith(".tsx") || path.endsWith(".ts")) return "typescript";
     if (path.endsWith(".jsx") || path.endsWith(".js")) return "javascript";
     if (path.endsWith(".css")) return "css";
-    if (path.endsWith(".json")) return "json";
     if (path.endsWith(".html")) return "html";
+    if (path.endsWith(".json")) return "json";
     return "plaintext";
   };
 
   const errorCount = diagnostics.filter((d) => d.type === "error").length;
 
   return (
-    <section className="flex-1 flex flex-col h-full bg-[#0d0d12] overflow-hidden">
-      {/* Top Controls Toolbar */}
-      <div className="h-12 border-b border-neutral-800 px-4 flex items-center justify-between bg-neutral-950/60 shrink-0">
+    <section className="flex-1 flex flex-col h-full bg-white text-neutral-900 min-w-0">
+      {/* Sub Header Toolbar (White Light Mode) */}
+      <div className="flex h-11 shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-4">
         {/* Left Tabs */}
-        <div className="flex items-center gap-1 bg-neutral-900/80 p-0.5 rounded-lg border border-neutral-800">
+        <div className="flex items-center gap-1">
           <button
             onClick={() => setActiveTab("preview")}
-            className={`px-3 py-1 rounded text-xs font-medium transition flex items-center gap-1.5 ${
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
               activeTab === "preview"
-                ? "bg-neutral-800 text-white shadow-sm"
-                : "text-neutral-400 hover:text-neutral-200"
+                ? "bg-neutral-100 text-neutral-900 shadow-2xs"
+                : "text-neutral-500 hover:text-neutral-800"
             }`}
           >
             <Eye className="w-3.5 h-3.5" />
@@ -150,10 +161,10 @@ export function PreviewPanel({
           </button>
           <button
             onClick={() => setActiveTab("code")}
-            className={`px-3 py-1 rounded text-xs font-medium transition flex items-center gap-1.5 ${
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
               activeTab === "code"
-                ? "bg-neutral-800 text-white shadow-sm"
-                : "text-neutral-400 hover:text-neutral-200"
+                ? "bg-neutral-100 text-neutral-900 shadow-2xs"
+                : "text-neutral-500 hover:text-neutral-800"
             }`}
           >
             <Code2 className="w-3.5 h-3.5" />
@@ -161,16 +172,16 @@ export function PreviewPanel({
           </button>
           <button
             onClick={() => setActiveTab("diagnostics")}
-            className={`px-3 py-1 rounded text-xs font-medium transition flex items-center gap-1.5 ${
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
               activeTab === "diagnostics"
-                ? "bg-neutral-800 text-white shadow-sm"
-                : "text-neutral-400 hover:text-neutral-200"
+                ? "bg-neutral-100 text-neutral-900 shadow-2xs"
+                : "text-neutral-500 hover:text-neutral-800"
             }`}
           >
             <Terminal className="w-3.5 h-3.5" />
             Diagnostics
             {errorCount > 0 && (
-              <span className="w-4 h-4 rounded-full bg-rose-500/20 text-rose-400 text-[10px] font-bold flex items-center justify-center">
+              <span className="w-4 h-4 rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold flex items-center justify-center">
                 {errorCount}
               </span>
             )}
@@ -182,14 +193,14 @@ export function PreviewPanel({
           {activeTab === "preview" && (
             <>
               {/* Responsive Viewport Switcher */}
-              <div className="flex items-center bg-neutral-900 border border-neutral-800 rounded-lg p-0.5">
+              <div className="flex items-center bg-neutral-100 border border-neutral-200 rounded-lg p-0.5">
                 <button
                   onClick={() => setViewport("desktop")}
                   title="Desktop (100%)"
                   className={`p-1.5 rounded transition ${
                     viewport === "desktop"
-                      ? "bg-neutral-800 text-white"
-                      : "text-neutral-500 hover:text-neutral-300"
+                      ? "bg-white text-neutral-900 shadow-2xs"
+                      : "text-neutral-500 hover:text-neutral-800"
                   }`}
                 >
                   <Monitor className="w-3.5 h-3.5" />
@@ -199,8 +210,8 @@ export function PreviewPanel({
                   title="Tablet (768px)"
                   className={`p-1.5 rounded transition ${
                     viewport === "tablet"
-                      ? "bg-neutral-800 text-white"
-                      : "text-neutral-500 hover:text-neutral-300"
+                      ? "bg-white text-neutral-900 shadow-2xs"
+                      : "text-neutral-500 hover:text-neutral-800"
                   }`}
                 >
                   <Tablet className="w-3.5 h-3.5" />
@@ -210,8 +221,8 @@ export function PreviewPanel({
                   title="Mobile (375px)"
                   className={`p-1.5 rounded transition ${
                     viewport === "mobile"
-                      ? "bg-neutral-800 text-white"
-                      : "text-neutral-500 hover:text-neutral-300"
+                      ? "bg-white text-neutral-900 shadow-2xs"
+                      : "text-neutral-500 hover:text-neutral-800"
                   }`}
                 >
                   <Smartphone className="w-3.5 h-3.5" />
@@ -222,7 +233,7 @@ export function PreviewPanel({
               <button
                 onClick={handleRefresh}
                 title="Refresh preview"
-                className="p-1.5 rounded-lg border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-800 transition"
+                className="p-1.5 rounded-lg border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50 transition"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
               </button>
@@ -231,7 +242,7 @@ export function PreviewPanel({
               <button
                 onClick={handleOpenNewWindow}
                 title="Open in new window"
-                className="p-1.5 rounded-lg border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-800 transition"
+                className="p-1.5 rounded-lg border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50 transition"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
               </button>
@@ -240,21 +251,33 @@ export function PreviewPanel({
 
           {activeTab === "code" && (
             <div className="flex items-center gap-3">
-              <span className="text-xs font-mono text-neutral-400">{activeFile}</span>
+              {/* Breadcrumb matching Image 1: src > App.tsx */}
+              <div className="flex items-center gap-1.5 text-xs font-mono text-neutral-600 bg-neutral-100/70 border border-neutral-200/80 px-2.5 py-1 rounded-lg">
+                <FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                {activeFile.split("/").map((segment, idx, arr) => (
+                  <React.Fragment key={idx}>
+                    <span className={idx === arr.length - 1 ? "font-semibold text-neutral-900" : "text-neutral-500"}>
+                      {segment}
+                    </span>
+                    {idx < arr.length - 1 && <span className="text-neutral-300">&gt;</span>}
+                  </React.Fragment>
+                ))}
+              </div>
+
               {saveStatus === "saving" && (
                 <span className="text-[10px] text-neutral-500 flex items-center gap-1">
                   <Loader2 className="w-3 h-3 animate-spin" /> Saving
                 </span>
               )}
               {saveStatus === "saved" && (
-                <span className="text-[10px] text-emerald-400 flex items-center gap-1">
+                <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
                   <Check className="w-3 h-3" /> Saved
                 </span>
               )}
               <button
                 onClick={handleDownloadFile}
                 title="Download current file"
-                className="p-1.5 rounded-lg border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-800 transition"
+                className="p-1.5 rounded-lg border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50 transition cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
               </button>
@@ -264,19 +287,19 @@ export function PreviewPanel({
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 relative overflow-hidden bg-[#070709] flex flex-col">
+      <div className="flex-1 relative overflow-hidden bg-neutral-100 flex flex-col min-h-0">
         {/* Error Notification Banner if diagnostics found in preview */}
         {errorCount > 0 && activeTab === "preview" && (
-          <div className="bg-rose-950/70 border-b border-rose-800/80 px-4 py-2 flex items-center justify-between text-xs text-rose-200">
+          <div className="bg-rose-50 border-b border-rose-200 px-4 py-2 flex items-center justify-between text-xs text-rose-800">
             <div className="flex items-center gap-2 truncate pr-2">
-              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
               <span className="truncate">
                 {diagnostics[0]?.message || "Compiler or runtime issues detected."}
               </span>
             </div>
             <button
               onClick={() => onAskAiToFix(diagnostics[0]?.message || "Fix preview errors")}
-              className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-rose-500 text-black font-semibold text-[11px] hover:bg-rose-400 transition"
+              className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-600 text-white font-semibold text-[11px] hover:bg-rose-700 transition"
             >
               <Wand2 className="w-3 h-3" />
               Ask AI to Fix
@@ -286,9 +309,9 @@ export function PreviewPanel({
 
         {/* Tab 1: Live Sandboxed Iframe Preview */}
         {activeTab === "preview" && (
-          <div className="flex-1 flex items-center justify-center p-4 bg-[#0a0a0f] overflow-auto">
+          <div className="flex-1 flex items-center justify-center p-4 bg-neutral-100 overflow-auto">
             <div
-              className={`h-full max-w-full bg-neutral-950 rounded-xl overflow-hidden shadow-2xl border border-neutral-800/80 transition-all duration-300 ${
+              className={`h-full max-w-full bg-white rounded-xl overflow-hidden shadow-md border border-neutral-200 transition-all duration-300 ${
                 viewport === "desktop"
                   ? "w-full"
                   : viewport === "tablet"
@@ -301,49 +324,146 @@ export function PreviewPanel({
                 srcDoc={previewHtml}
                 title="Kivo Live App Preview"
                 sandbox="allow-scripts allow-forms allow-modals allow-same-origin"
-                className="w-full h-full border-none bg-[#09090b]"
+                className="w-full h-full border-none bg-white"
               />
             </div>
           </div>
         )}
 
-        {/* Tab 2: Monaco Editor */}
+        {/* Tab 2: Monaco Editor + Bottom Dock (100% Light Theme - Matches Images) */}
         {activeTab === "code" && (
-          <div className="flex-1 w-full h-full">
-            <MonacoEditor
-              height="100%"
-              path={activeFile}
-              language={getLanguage(activeFile)}
-              value={files[activeFile] || ""}
-              onChange={handleEditorChange}
-              theme="vs-dark"
-              options={{
-                fontSize: 13,
-                fontFamily: "'JetBrains Mono', 'Fira Code', Menlo, Monaco, monospace",
-                minimap: { enabled: false },
-                wordWrap: "on",
-                scrollBeyondLastLine: false,
-                lineNumbers: "on",
-                renderWhitespace: "none",
-                tabSize: 2,
-                automaticLayout: true,
-                padding: { top: 12, bottom: 12 },
-              }}
-            />
+          <div className="flex-1 flex flex-col h-full w-full bg-white min-h-0 overflow-hidden">
+            {/* Monaco Editor Container */}
+            <div className="flex-1 w-full min-h-0 bg-white">
+              <MonacoEditor
+                height="100%"
+                path={activeFile}
+                language={getLanguage(activeFile)}
+                value={files[activeFile] || ""}
+                onChange={handleEditorChange}
+                theme="vs"
+                options={{
+                  fontSize: 13,
+                  fontFamily: "'JetBrains Mono', 'Fira Code', Menlo, Monaco, monospace",
+                  minimap: { enabled: false },
+                  wordWrap: "on",
+                  scrollBeyondLastLine: false,
+                  lineNumbers: "on",
+                  renderWhitespace: "none",
+                  tabSize: 2,
+                  automaticLayout: true,
+                  padding: { top: 12, bottom: 12 },
+                }}
+              />
+            </div>
+
+            {/* Bottom Dock (Terminal / Output) in Crisp Light Theme */}
+            <div className="border-t border-neutral-200 bg-[#fafafa] shrink-0">
+              {/* Dock Tabs Header */}
+              <div className="flex items-center justify-between px-3 h-8 border-b border-neutral-200 bg-white text-xs select-none">
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => { setTerminalTab("kivo"); setIsTerminalOpen(true); }}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold transition cursor-pointer ${
+                      terminalTab === "kivo" && isTerminalOpen
+                        ? "bg-neutral-100 text-neutral-900"
+                        : "text-neutral-500 hover:text-neutral-800"
+                    }`}
+                  >
+                    <Zap className="w-3 h-3 text-amber-500" />
+                    <span>Kivo</span>
+                  </button>
+
+                  <button
+                    onClick={() => { setTerminalTab("publish"); setIsTerminalOpen(true); }}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold transition cursor-pointer ${
+                      terminalTab === "publish" && isTerminalOpen
+                        ? "bg-neutral-100 text-neutral-900"
+                        : "text-neutral-500 hover:text-neutral-800"
+                    }`}
+                  >
+                    <ExternalLink className="w-3 h-3 text-blue-500" />
+                    <span>Publish Output</span>
+                  </button>
+
+                  <button
+                    onClick={() => { setTerminalTab("terminal"); setIsTerminalOpen(true); }}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold transition cursor-pointer ${
+                      terminalTab === "terminal" && isTerminalOpen
+                        ? "bg-neutral-100 text-neutral-900"
+                        : "text-neutral-500 hover:text-neutral-800"
+                    }`}
+                  >
+                    <Terminal className="w-3 h-3 text-emerald-600" />
+                    <span>Terminal</span>
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setIsTerminalOpen((prev) => !prev)}
+                  className="p-1 rounded text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition cursor-pointer"
+                  title={isTerminalOpen ? "Collapse dock" : "Expand dock"}
+                >
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                      isTerminalOpen ? "" : "rotate-180"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Terminal Logs in Light Theme */}
+              {isTerminalOpen && (
+                <div className="p-3 h-28 overflow-y-auto font-mono text-[11px] leading-relaxed bg-[#fafafa] text-neutral-700 select-text">
+                  {terminalTab === "terminal" && (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-600 font-bold">➜</span>
+                        <span className="font-semibold text-neutral-800">Local:</span>
+                        <span className="text-blue-600 underline">http://localhost:5173/</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-600 font-bold">➜</span>
+                        <span className="font-semibold text-neutral-800">Network:</span>
+                        <span className="text-neutral-500">use --host to expose</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-neutral-400">
+                        <span className="text-emerald-600 font-bold">➜</span>
+                        <span>press <kbd className="px-1 py-0.5 rounded bg-neutral-200/70 font-semibold text-neutral-700">h</kbd> + <kbd className="px-1 py-0.5 rounded bg-neutral-200/70 font-semibold text-neutral-700">enter</kbd> to show help</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {terminalTab === "kivo" && (
+                    <div className="text-xs text-neutral-600 space-y-1">
+                      <p className="font-semibold text-neutral-900">⚡ Kivo In-Memory Bundler active</p>
+                      <p className="text-neutral-500 text-[11px]">Dynamic Babel JSX compilation and Tailwind CSS CDN styles loaded.</p>
+                    </div>
+                  )}
+
+                  {terminalTab === "publish" && (
+                    <div className="text-xs text-neutral-600 space-y-1">
+                      <p className="font-semibold text-neutral-900">🚀 Production Ready</p>
+                      <p className="text-neutral-500 text-[11px]">Click &quot;Publish&quot; in the header to export code or share your live deployment.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {/* Tab 3: Diagnostics Panel */}
         {activeTab === "diagnostics" && (
-          <div className="flex-1 p-4 overflow-y-auto space-y-3 font-mono text-xs">
-            <div className="flex items-center justify-between pb-2 border-b border-neutral-800">
-              <span className="text-neutral-400 text-xs">
+          <div className="flex-1 p-4 overflow-y-auto space-y-3 font-mono text-xs bg-white">
+            <div className="flex items-center justify-between pb-2 border-b border-neutral-200">
+              <span className="text-neutral-500 text-xs">
                 {diagnostics.length} diagnostic items reported
               </span>
               {diagnostics.length > 0 && (
                 <button
                   onClick={onClearDiagnostics}
-                  className="text-neutral-500 hover:text-neutral-300 text-[10px]"
+                  className="text-neutral-500 hover:text-neutral-900 text-[10px]"
                 >
                   Clear all
                 </button>
@@ -352,37 +472,37 @@ export function PreviewPanel({
 
             {diagnostics.length === 0 ? (
               <div className="py-12 text-center text-neutral-500 flex flex-col items-center gap-2">
-                <CheckCircle2 className="w-8 h-8 text-emerald-500/60" />
+                <CheckCircle2 className="w-8 h-8 text-emerald-600" />
                 <span>All diagnostics clean. No runtime or bundler errors detected.</span>
               </div>
             ) : (
               diagnostics.map((diag) => (
                 <div
                   key={diag.id}
-                  className={`p-3 rounded-lg border ${
+                  className={`p-3 rounded-xl border ${
                     diag.type === "error"
-                      ? "bg-rose-950/20 border-rose-800/60 text-rose-300"
-                      : "bg-amber-950/20 border-amber-800/60 text-amber-300"
+                      ? "bg-rose-50 border-rose-200 text-rose-800"
+                      : "bg-amber-50 border-amber-200 text-amber-800"
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="uppercase text-[9px] font-bold tracking-wider px-1.5 py-0.2 rounded bg-neutral-900 border border-neutral-800">
+                    <span className="uppercase text-[9px] font-bold tracking-wider px-1.5 py-0.2 rounded bg-white border border-neutral-200">
                       {diag.type} • {diag.source || "runtime"}
                     </span>
-                    <span className="text-[10px] text-neutral-500">
+                    <span className="text-[10px] text-neutral-400">
                       {new Date(diag.timestamp).toLocaleTimeString()}
                     </span>
                   </div>
                   <div className="text-xs break-all">{diag.message}</div>
                   {diag.file && (
-                    <div className="mt-1 text-[10px] text-neutral-400">
+                    <div className="mt-1 text-[10px] text-neutral-500">
                       File: {diag.file} {diag.line ? `:${diag.line}` : ""}
                     </div>
                   )}
                   <div className="mt-2 flex justify-end">
                     <button
                       onClick={() => onAskAiToFix(diag.message)}
-                      className="text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded hover:bg-rose-500/30 transition flex items-center gap-1 font-sans"
+                      className="text-[10px] bg-rose-600 text-white px-2 py-0.5 rounded-lg hover:bg-rose-700 transition flex items-center gap-1 font-sans font-semibold"
                     >
                       <Wand2 className="w-3 h-3" />
                       Fix with AI

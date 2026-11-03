@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Zap, ShieldCheck, Sparkles, Check, Loader2, AlertCircle } from "lucide-react";
+import { Check, Loader2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 interface LoginModalProps {
@@ -83,7 +83,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
           onClose();
         }, 700);
       } else {
-        setError(res.error || "Google authentication failed. Please check server settings.");
+        setError(res.error || "Google authentication failed.");
       }
     },
     [loginWithGoogle, onClose]
@@ -105,10 +105,10 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     });
 
     container.innerHTML = "";
-    const width = Math.max(240, Math.min(container.offsetWidth || 360, 400));
+    const width = Math.max(240, Math.min(container.offsetWidth || 320, 360));
     googleId.renderButton(container, {
       type: "standard",
-      theme: "filled_black",
+      theme: "outline",
       size: "large",
       text: "continue_with",
       shape: "rectangular",
@@ -180,90 +180,72 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
       return;
     }
 
-    // No client ID configured — show a clear error instead of silently falling back
-    setError(
-      "Google Sign-In is not configured. Set NEXT_PUBLIC_GOOGLE_CLIENT_ID in client/.env and GOOGLE_CLIENT_ID in server/.env, then restart both servers."
-    );
+    setError("Google Sign-In is not configured. Set NEXT_PUBLIC_GOOGLE_CLIENT_ID in client/.env.");
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-neutral-800 bg-[#0d0d0f] shadow-2xl text-neutral-100">
-
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-sm overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xl text-neutral-900">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-neutral-800/80 px-6 py-4">
+        <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-black font-bold text-xs shadow-md shadow-emerald-500/20">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white font-bold text-xs shadow-sm">
               K
             </div>
             <div>
-              <h3 className="text-sm font-semibold tracking-tight text-white">
-                Sign in to Kivo AI Builder
+              <h3 className="text-sm font-semibold tracking-tight text-neutral-900">
+                Log in to Kivo
               </h3>
-              <p className="text-[11px] text-neutral-400">
-                Unlock 50,000 monthly tokens &amp; persistent projects
+              <p className="text-[11px] text-neutral-500">
+                Sign in with Google to continue
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors cursor-pointer"
+            className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 transition-colors cursor-pointer"
           >
             ✕
           </button>
         </div>
 
-        {/* Benefits strip */}
-        <div className="bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-transparent border-b border-neutral-800 px-6 py-2.5 flex items-center justify-between text-[11px] text-emerald-400">
-          <span className="flex items-center gap-1.5 font-medium">
-            <Zap className="h-3.5 w-3.5" /> 50k Free Tokens
-          </span>
-          <span className="flex items-center gap-1.5 font-medium">
-            <ShieldCheck className="h-3.5 w-3.5" /> Rate Limited
-          </span>
-          <span className="flex items-center gap-1.5 font-medium">
-            <Sparkles className="h-3.5 w-3.5" /> Fast Inference
-          </span>
-        </div>
-
         {/* Content */}
         <div className="p-6">
           {error && (
-            <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-xs text-red-300 flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
+            <div className="mb-4 rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-600 flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
               <div className="flex-1 break-words">{error}</div>
             </div>
           )}
 
           {isSubmitted ? (
-            <div className="py-10 text-center space-y-2">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 animate-in zoom-in-75">
+            <div className="py-8 text-center space-y-2">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 animate-in zoom-in-75">
                 <Check className="h-6 w-6" />
               </div>
-              <h4 className="text-sm font-semibold text-white">Signed In Successfully!</h4>
-              <p className="text-xs text-neutral-400">
-                Your token allowance and workspace session are ready.
+              <h4 className="text-sm font-semibold text-neutral-900">Signed In!</h4>
+              <p className="text-xs text-neutral-500">
+                Opening your workspace...
               </p>
             </div>
           ) : (
-            <div className="py-2">
-              {/* GIS renders the real button here; kept visible so GIS can measure width */}
+            <div className="py-2 space-y-3">
+              {/* GIS container */}
               <div
                 ref={googleBtnContainerRef}
                 id="google-btn-container"
                 className={`w-full min-h-[44px] flex justify-center ${isGsiRendered ? "" : "opacity-0 pointer-events-none absolute"}`}
               />
 
-              {/* Fallback / loading button shown until GIS iframe renders */}
               {!isGsiRendered && (
                 <button
                   type="button"
                   onClick={handleGoogleButtonClick}
                   disabled={isLoading}
-                  className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-neutral-700 bg-neutral-800/80 hover:bg-neutral-700 text-sm font-medium text-white transition-all cursor-pointer shadow-sm active:scale-98 disabled:opacity-60"
+                  className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 text-xs font-semibold text-neutral-800 transition shadow-2xs active:scale-98 disabled:opacity-60 cursor-pointer"
                 >
                   {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                    <Loader2 className="h-4 w-4 animate-spin text-neutral-700" />
                   ) : (
                     <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -275,21 +257,14 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                   <span>Continue with Google</span>
                 </button>
               )}
-
-              {!isConfigured && (
-                <p className="mt-3 text-[10px] text-neutral-500 text-center leading-relaxed">
-                  Set <code className="text-neutral-400 bg-neutral-800 px-1 py-0.5 rounded">NEXT_PUBLIC_GOOGLE_CLIENT_ID</code> in{" "}
-                  <code className="text-neutral-400 bg-neutral-800 px-1 py-0.5 rounded">client/.env</code> to enable Google Sign-In.
-                </p>
-              )}
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t border-neutral-800/80 bg-neutral-950/60 text-center">
-          <span className="text-[10px] text-neutral-500">
-            By signing in you agree to our Terms of Service &amp; Privacy Policy.
+        <div className="px-6 py-3 border-t border-neutral-100 bg-neutral-50/50 text-center">
+          <span className="text-[10px] text-neutral-400">
+            By continuing, you agree to our Terms of Service &amp; Privacy Policy.
           </span>
         </div>
       </div>

@@ -14,6 +14,8 @@ import {
   Zap,
   ChevronDown,
   ChevronRight,
+  Bookmark,
+  Plus,
 } from "lucide-react";
 import { ChatMessage, ChatStatus, ToolCallRecord } from "@/types/builder";
 
@@ -28,6 +30,7 @@ interface ChatPanelProps {
   onCancelGeneration: () => void;
   onUndoLastCheckpoint: () => void;
   canUndo: boolean;
+  latestCheckpointTitle?: string;
 }
 
 const QUICK_PROMPTS = [
@@ -67,6 +70,7 @@ export function ChatPanel({
   onCancelGeneration,
   onUndoLastCheckpoint,
   canUndo,
+  latestCheckpointTitle,
 }: ChatPanelProps) {
   const [inputPrompt, setInputPrompt] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -97,16 +101,16 @@ export function ChatPanel({
   };
 
   return (
-    <section className="flex-1 flex flex-col h-full bg-[#0a0a0d] border-r border-neutral-800 min-w-[340px] max-w-[480px]">
-      {/* Messages Thread */}
+    <section className="flex-1 flex flex-col h-full bg-[#fafafa] border-r border-neutral-200 text-neutral-900 min-w-[340px] max-w-[480px]">
+      {/* Messages Thread (White Light Theme) */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-neutral-900 border border-neutral-800 flex items-center justify-center text-emerald-400">
+            <div className="w-12 h-12 rounded-2xl bg-white border border-neutral-200 shadow-xs flex items-center justify-center text-emerald-600">
               <Sparkles className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-white">What would you like to build?</h3>
+              <h3 className="text-sm font-semibold text-neutral-900">What would you like to build?</h3>
               <p className="text-xs text-neutral-500 mt-1 max-w-xs leading-relaxed">
                 Describe your desired website, features, or style changes in plain English.
               </p>
@@ -114,14 +118,14 @@ export function ChatPanel({
 
             {/* Quick Prompts */}
             <div className="w-full space-y-2 pt-2 text-left">
-              <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">
+              <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">
                 Suggested Prompts
               </span>
               {QUICK_PROMPTS.map((qp) => (
                 <button
                   key={qp}
                   onClick={() => onSendMessage(qp)}
-                  className="w-full text-left text-xs p-2.5 rounded-lg border border-neutral-800/80 bg-neutral-900/40 text-neutral-300 hover:text-white hover:border-neutral-700 transition"
+                  className="w-full text-left text-xs p-2.5 rounded-xl border border-neutral-200 bg-white text-neutral-700 hover:text-neutral-900 hover:border-neutral-300 shadow-2xs transition"
                 >
                   {qp}
                 </button>
@@ -137,15 +141,15 @@ export function ChatPanel({
               <div
                 className={`max-w-[92%] rounded-2xl px-4 py-3 text-xs leading-relaxed ${
                   msg.role === "user"
-                    ? "bg-neutral-800 text-white border border-neutral-700/60"
-                    : "bg-neutral-900/80 text-neutral-200 border border-neutral-800"
+                    ? "bg-neutral-900 text-white shadow-xs"
+                    : "bg-white text-neutral-800 border border-neutral-200/90 shadow-2xs"
                 }`}
               >
                 {/* Assistant Plan Callout */}
                 {msg.plan && (
-                  <div className="mb-2 p-2.5 rounded-lg bg-neutral-950/80 border border-neutral-800 text-[11px] text-neutral-400 space-y-1">
-                    <div className="font-semibold text-neutral-300 flex items-center gap-1.5">
-                      <Sparkles className="w-3 h-3 text-emerald-400" />
+                  <div className="mb-2.5 p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200/80 text-[11px] text-emerald-900 space-y-1">
+                    <div className="font-semibold text-emerald-800 flex items-center gap-1.5">
+                      <Sparkles className="w-3 h-3 text-emerald-600" />
                       Plan
                     </div>
                     <p className="whitespace-pre-wrap">{msg.plan}</p>
@@ -157,52 +161,46 @@ export function ChatPanel({
 
                 {/* Tool Calls */}
                 {msg.toolCalls && msg.toolCalls.length > 0 && (
-                  <div className="mt-3 pt-2.5 border-t border-neutral-800 space-y-1.5">
-                    <div className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider flex items-center gap-1">
+                  <div className="mt-3 pt-2.5 border-t border-neutral-100 space-y-1.5">
+                    <div className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider flex items-center gap-1">
                       <Wrench className="w-3 h-3" />
                       Work steps ({msg.toolCalls.length})
                     </div>
                     {msg.toolCalls.map((tc, stepIndex) => {
-                      const isExpanded = expandedTools[tc.id] ?? true;
+                      const isExpanded = expandedTools[tc.id] ?? false;
                       return (
                         <div
                           key={tc.id}
-                          className="rounded-lg border border-neutral-800/80 bg-neutral-950/60 text-[11px] overflow-hidden"
+                          className="rounded-lg border border-neutral-200/80 bg-neutral-50/80 text-[11px] overflow-hidden"
                         >
                           <div
                             onClick={() => toggleTool(tc.id)}
-                            className="p-2 flex items-center justify-between cursor-pointer hover:bg-neutral-900/50 transition"
+                            className="p-2 flex items-center justify-between cursor-pointer hover:bg-neutral-100 transition"
                           >
-                            <span className="font-mono text-emerald-400 flex items-center gap-1.5">
+                            <span className="font-mono text-emerald-700 flex items-center gap-1.5">
                               {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                              <span className="text-neutral-500">{stepIndex + 1}.</span>
+                              <span className="text-neutral-400">{stepIndex + 1}.</span>
                               {TOOL_LABELS[tc.tool] || tc.tool}
                             </span>
-                            <span className={`text-[9px] px-1.5 py-0.5 rounded ${
+                            <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${
                               tc.status === "error"
-                                ? "bg-rose-500/10 text-rose-300"
+                                ? "bg-rose-100 text-rose-700"
                                 : tc.status === "success"
-                                  ? "bg-emerald-500/10 text-emerald-300"
-                                  : "bg-neutral-800 text-neutral-300"
+                                  ? "bg-emerald-100 text-emerald-700"
+                                  : "bg-neutral-200 text-neutral-700"
                             }`}>
                               {tc.status === "executing" ? "Working" : tc.status === "success" ? "Done" : "Failed"}
                             </span>
                           </div>
 
                           {isExpanded && (
-                            <div className="p-2 border-t border-neutral-800/80 bg-neutral-950 font-mono text-[10px] text-neutral-400 space-y-1 overflow-x-auto">
+                            <div className="p-2 border-t border-neutral-200/80 bg-white font-mono text-[10px] text-neutral-600 space-y-1 overflow-x-auto">
                               <div>
-                                <span className="text-neutral-500">Args:</span>{" "}
+                                <span className="text-neutral-400">Args:</span>{" "}
                                 {JSON.stringify(visibleToolArgs(tc.args))}
                               </div>
                               {tc.error && (
-                                <div className="text-rose-300 whitespace-pre-wrap">{tc.error}</div>
-                              )}
-                              {tc.result !== undefined && (
-                                <div>
-                                  <span className="text-neutral-500">Result:</span>{" "}
-                                  {typeof tc.result === "string" ? tc.result : JSON.stringify(tc.result)}
-                                </div>
+                                <div className="text-rose-600 whitespace-pre-wrap">{tc.error}</div>
                               )}
                             </div>
                           )}
@@ -211,33 +209,48 @@ export function ChatPanel({
                     })}
                   </div>
                 )}
-
-                {/* Meta tokens & time */}
-                {(msg.tokensUsed !== undefined || msg.generationTime !== undefined) && (
-                  <div className="mt-2 text-[9px] text-neutral-500 flex items-center gap-2">
-                    {msg.tokensUsed !== undefined && <span>{msg.tokensUsed} tokens</span>}
-                    {msg.generationTime !== undefined && <span>• {msg.generationTime}s</span>}
-                  </div>
-                )}
               </div>
             </div>
           ))
         )}
 
-        {/* Live In-Progress Status Banner */}
-        {isGenerating && statusMessage && (
-          <div className="p-3 rounded-xl border border-neutral-800 bg-neutral-900/50 text-xs text-neutral-300 flex items-center gap-2.5 animate-pulse">
-            <Loader2 className="w-4 h-4 text-emerald-400 animate-spin shrink-0" />
-            <span className="truncate">{statusMessage}</span>
+        {/* Live Generation Status */}
+        {isGenerating && (
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-white border border-neutral-200 text-xs text-neutral-700 shadow-2xs animate-pulse">
+            <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+            <span>{statusMessage || "Generating application..."}</span>
           </div>
         )}
 
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Form */}
-      <form onSubmit={handleSubmit} className="p-3 border-t border-neutral-800 bg-neutral-950">
-        <div className="relative rounded-xl border border-neutral-800 bg-neutral-900/60 focus-within:border-neutral-600 transition">
+      {/* Checkpoint / Version Bookmark Bar (From Image 3) */}
+      <div className="px-4 py-2 bg-white border-t border-neutral-200 flex items-center justify-between text-xs text-neutral-700">
+        <div className="flex items-center gap-2 truncate">
+          <Bookmark className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+          <span className="font-semibold text-neutral-900 truncate">
+            {latestCheckpointTitle || "Version 1"}
+          </span>
+          <span className="text-[11px] text-neutral-400 hidden sm:inline">
+            • Auto-saved checkpoint
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={onUndoLastCheckpoint}
+          disabled={!canUndo || isGenerating}
+          title="Rollback to previous checkpoint"
+          className="flex items-center gap-1 text-[11px] font-medium text-neutral-500 hover:text-neutral-800 disabled:opacity-40"
+        >
+          <RotateCcw className="h-3 w-3" />
+          <span>Rollback</span>
+        </button>
+      </div>
+
+      {/* Chat Prompt Input Box (Matches Image 3) */}
+      <form onSubmit={handleSubmit} className="p-3 bg-white border-t border-neutral-200">
+        <div className="rounded-2xl border border-neutral-200 bg-[#fafafa] p-2 focus-within:border-neutral-400 focus-within:bg-white focus-within:ring-2 focus-within:ring-neutral-200/50 transition shadow-2xs">
           <textarea
             ref={textareaRef}
             value={inputPrompt}
@@ -246,56 +259,50 @@ export function ChatPanel({
             placeholder={
               isGenerating
                 ? "Generation in progress..."
-                : "Describe changes (e.g., 'Add a pricing calculator', 'Make it dark themed')..."
+                : "How can Kivo help you today? (or /command)"
             }
             disabled={isGenerating}
             rows={2}
-            className="w-full bg-transparent p-3 pr-20 text-xs text-white placeholder-neutral-500 focus:outline-none resize-none"
+            className="w-full bg-transparent px-2 py-1 text-xs text-neutral-900 placeholder-neutral-400 focus:outline-none resize-none"
           />
 
-          <div className="absolute right-2 bottom-2 flex items-center gap-1">
-            <button
-              type="button"
-              onClick={onUndoLastCheckpoint}
-              disabled={!canUndo || isGenerating}
-              title="Undo last modification"
-              aria-label="Undo last modification"
-              className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-800 text-neutral-400 transition hover:bg-neutral-800 hover:text-white disabled:opacity-30"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-            </button>
-            {isGenerating ? (
+          <div className="flex items-center justify-between pt-1 border-t border-neutral-100">
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                onClick={onCancelGeneration}
-                title="Cancel generation"
-                className="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 flex items-center justify-center transition"
+                aria-label="Add context"
+                className="flex h-6 w-6 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-200 hover:text-neutral-700 transition"
               >
-                <Square className="w-3.5 h-3.5 fill-current" />
+                <Plus className="h-3.5 w-3.5" />
               </button>
-            ) : (
-              <button
-                type="submit"
-                disabled={!inputPrompt.trim()}
-                title="Send instruction (Enter)"
-                className="w-7 h-7 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-30 disabled:hover:bg-emerald-500 flex items-center justify-center transition font-semibold"
-              >
-                <Send className="w-3.5 h-3.5" />
-              </button>
-            )}
+              <div className="inline-flex items-center gap-1 text-[11px] font-medium text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full">
+                <span>Standard</span>
+                <ChevronDown className="h-2.5 w-2.5" />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {isGenerating ? (
+                <button
+                  type="button"
+                  onClick={onCancelGeneration}
+                  title="Cancel generation"
+                  className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 flex items-center justify-center transition"
+                >
+                  <Square className="w-3.5 h-3.5 fill-current" />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={!inputPrompt.trim()}
+                  title="Send instruction (Enter)"
+                  className="w-7 h-7 rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-30 disabled:hover:bg-blue-600 flex items-center justify-center transition shadow-2xs"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-        <div className="mt-1.5 flex items-center justify-between px-1 text-[10px] text-neutral-500">
-          <span>Enter to send, Shift+Enter for newline</span>
-          <button
-            type="button"
-            onClick={() => onToggleMockMode(!useMockMode)}
-            title={useMockMode ? "Switch to cloud mode" : "Switch to offline mode"}
-            aria-label={useMockMode ? "Switch to cloud mode" : "Switch to offline mode"}
-            className={`rounded p-1 transition hover:bg-neutral-800 ${useMockMode ? "text-neutral-400" : "text-emerald-400"}`}
-          >
-            <Zap className="h-3 w-3" />
-          </button>
         </div>
       </form>
     </section>

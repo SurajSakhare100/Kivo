@@ -19,6 +19,7 @@ import {
   FilePlus,
   FolderPlus,
   AlertCircle,
+  Search,
 } from "lucide-react";
 import { FilesMap, ProjectCheckpoint } from "@/types/builder";
 import { useAuth } from "@/context/AuthContext";
@@ -96,7 +97,8 @@ export function Sidebar({
   onUndoLastCheckpoint,
 }: SidebarProps) {
   const { user, isAuthenticated, openTokenSettings, openLoginModal, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<"files" | "history">("files");
+  const [activeTab, setActiveTab] = useState<"files" | "search" | "history">("files");
+  const [fileSearch, setFileSearch] = useState("");
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 
   // File and Folder Creation state
@@ -211,18 +213,18 @@ export function Sidebar({
             <div
               onClick={() => toggleFolder(node.fullPath)}
               style={{ paddingLeft: `${depth * 12 + 6}px` }}
-              className="group flex items-center justify-between py-1 px-1.5 rounded-md text-xs text-neutral-300 hover:bg-neutral-900/60 hover:text-white cursor-pointer transition"
+              className="group flex items-center justify-between py-1 px-1.5 rounded-lg text-xs text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 cursor-pointer transition"
             >
               <div className="flex items-center gap-1.5 truncate">
                 {isExpanded ? (
-                  <ChevronDown className="w-3 h-3 text-neutral-500 shrink-0" />
+                  <ChevronDown className="w-3 h-3 text-neutral-400 shrink-0" />
                 ) : (
-                  <ChevronRight className="w-3 h-3 text-neutral-500 shrink-0" />
+                  <ChevronRight className="w-3 h-3 text-neutral-400 shrink-0" />
                 )}
                 {isExpanded ? (
-                  <FolderOpen className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <FolderOpen className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                 ) : (
-                  <Folder className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <Folder className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                 )}
                 <span className="truncate font-medium">{node.name}</span>
               </div>
@@ -235,7 +237,7 @@ export function Sidebar({
                     handleStartCreate("file", node.fullPath);
                   }}
                   title={`New file in ${node.fullPath}`}
-                  className="p-1 hover:bg-neutral-800 rounded text-neutral-400 hover:text-white"
+                  className="p-1 hover:bg-neutral-200 rounded text-neutral-400 hover:text-neutral-700"
                 >
                   <FilePlus className="w-3 h-3" />
                 </button>
@@ -245,7 +247,7 @@ export function Sidebar({
                     handleStartCreate("folder", node.fullPath);
                   }}
                   title={`New folder in ${node.fullPath}`}
-                  className="p-1 hover:bg-neutral-800 rounded text-neutral-400 hover:text-white"
+                  className="p-1 hover:bg-neutral-200 rounded text-neutral-400 hover:text-neutral-700"
                 >
                   <FolderPlus className="w-3 h-3" />
                 </button>
@@ -264,10 +266,10 @@ export function Sidebar({
           key={node.fullPath}
           onClick={() => onSelectFile(node.fullPath)}
           style={{ paddingLeft: `${depth * 12 + 20}px` }}
-          className={`group flex items-center justify-between py-1 px-1.5 rounded-md text-xs cursor-pointer transition ${
+          className={`group flex items-center justify-between py-1 px-1.5 rounded-lg text-xs cursor-pointer transition ${
             isActive
-              ? "bg-neutral-800/90 text-white font-medium"
-              : "text-neutral-400 hover:bg-neutral-900/60 hover:text-neutral-200"
+              ? "bg-neutral-200/80 text-neutral-900 font-semibold shadow-2xs"
+              : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
           }`}
         >
           <div className="flex items-center gap-2 truncate">
@@ -299,32 +301,43 @@ export function Sidebar({
   };
 
   return (
-    <aside className="w-64 border-r border-neutral-800 bg-[#09090b] flex flex-col h-full shrink-0 select-none">
-      {/* Nav Tabs */}
-      <div className="flex border-b border-neutral-800/80 p-1 bg-neutral-950/40">
+    <aside className="w-56 border-r border-neutral-200 bg-[#fafafa] flex flex-col h-full shrink-0 select-none text-neutral-900">
+      {/* Nav Tabs matching Image 1: Files, Search, History */}
+      <div className="flex border-b border-neutral-200 p-1 bg-white">
         <button
           onClick={() => setActiveTab("files")}
-          className={`flex-1 py-1.5 text-[11px] font-medium rounded transition flex items-center justify-center gap-1.5 ${
+          className={`flex-1 py-1.5 text-[11px] font-semibold rounded-lg transition flex items-center justify-center gap-1 cursor-pointer ${
             activeTab === "files"
-              ? "bg-neutral-800 text-white"
-              : "text-neutral-400 hover:text-neutral-200"
+              ? "bg-neutral-100 text-neutral-900 shadow-2xs"
+              : "text-neutral-500 hover:text-neutral-800"
           }`}
         >
           <FolderOpen className="w-3.5 h-3.5" />
           Files
         </button>
         <button
-          onClick={() => setActiveTab("history")}
-          className={`flex-1 py-1.5 text-[11px] font-medium rounded transition flex items-center justify-center gap-1.5 ${
-            activeTab === "history"
-              ? "bg-neutral-800 text-white"
-              : "text-neutral-400 hover:text-neutral-200"
+          onClick={() => setActiveTab("search")}
+          className={`flex-1 py-1.5 text-[11px] font-semibold rounded-lg transition flex items-center justify-center gap-1 cursor-pointer ${
+            activeTab === "search"
+              ? "bg-neutral-100 text-neutral-900 shadow-2xs"
+              : "text-neutral-500 hover:text-neutral-800"
           }`}
         >
+          <Search className="w-3.5 h-3.5" />
+          Search
+        </button>
+        <button
+          onClick={() => setActiveTab("history")}
+          className={`px-2 py-1.5 text-[11px] font-semibold rounded-lg transition flex items-center justify-center gap-1 cursor-pointer ${
+            activeTab === "history"
+              ? "bg-neutral-100 text-neutral-900 shadow-2xs"
+              : "text-neutral-500 hover:text-neutral-800"
+          }`}
+          title="Version Checkpoints"
+        >
           <History className="w-3.5 h-3.5" />
-          History
           {checkpoints.length > 0 && (
-            <span className="px-1 text-[9px] rounded-full bg-emerald-500/20 text-emerald-400">
+            <span className="px-1 text-[9px] rounded-full bg-neutral-200 text-neutral-700 font-bold">
               {checkpoints.length}
             </span>
           )}
@@ -333,6 +346,46 @@ export function Sidebar({
 
       {/* Tab Content */}
       <div className="flex-1 overflow-y-auto p-2">
+        {activeTab === "search" && (
+          <div className="space-y-2">
+            <div className="relative">
+              <input
+                type="text"
+                value={fileSearch}
+                onChange={(e) => setFileSearch(e.target.value)}
+                placeholder="Search file names..."
+                className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs text-neutral-800 placeholder-neutral-400 outline-none focus:border-neutral-400"
+              />
+              {fileSearch && (
+                <button
+                  onClick={() => setFileSearch("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 text-xs"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-0.5 pt-1">
+              {Object.keys(files)
+                .filter((p) => p.toLowerCase().includes(fileSearch.toLowerCase()))
+                .map((path) => (
+                  <button
+                    key={path}
+                    onClick={() => onSelectFile(path)}
+                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-left transition truncate cursor-pointer ${
+                      activeFile === path
+                        ? "bg-blue-50 text-blue-700 font-semibold"
+                        : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+                    }`}
+                  >
+                    {renderFileIcon(path)}
+                    <span className="truncate">{path}</span>
+                  </button>
+                ))}
+            </div>
+          </div>
+        )}
         {activeTab === "files" && (
           <div className="space-y-1">
             <div className="flex items-center justify-between px-2 py-1 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
@@ -341,14 +394,14 @@ export function Sidebar({
                 <button
                   onClick={() => handleStartCreate("file", "")}
                   title="Create new file in root"
-                  className="hover:text-white p-1 rounded hover:bg-neutral-800 transition text-neutral-400"
+                  className="hover:text-neutral-900 p-1 rounded hover:bg-neutral-100 transition text-neutral-400"
                 >
                   <FilePlus className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => handleStartCreate("folder", "")}
                   title="Create new folder in root"
-                  className="hover:text-white p-1 rounded hover:bg-neutral-800 transition text-neutral-400"
+                  className="hover:text-neutral-900 p-1 rounded hover:bg-neutral-100 transition text-neutral-400"
                 >
                   <FolderPlus className="w-3.5 h-3.5" />
                 </button>
@@ -357,9 +410,9 @@ export function Sidebar({
 
             {/* Inline file/folder creator */}
             {createMode !== "none" && (
-              <form onSubmit={handleCreateSubmit} className="p-2.5 bg-neutral-900 rounded-lg border border-neutral-700/80 mb-2 space-y-2">
-                <div className="text-[10px] text-neutral-400 font-medium flex items-center gap-1">
-                  {createMode === "file" ? <FilePlus className="w-3 h-3 text-emerald-400" /> : <FolderPlus className="w-3 h-3 text-amber-400" />}
+              <form onSubmit={handleCreateSubmit} className="p-2.5 bg-white rounded-xl border border-neutral-200 mb-2 space-y-2 shadow-xs">
+                <div className="text-[10px] text-neutral-600 font-medium flex items-center gap-1">
+                  {createMode === "file" ? <FilePlus className="w-3 h-3 text-emerald-600" /> : <FolderPlus className="w-3 h-3 text-amber-600" />}
                   <span>
                     New {createMode} {targetParentFolder ? `in ${targetParentFolder}/` : "in root"}
                   </span>
@@ -374,11 +427,11 @@ export function Sidebar({
                     setValidationError("");
                   }}
                   autoFocus
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded px-2 py-1 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-neutral-50 border border-neutral-200 rounded px-2 py-1 text-xs text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-400"
                 />
 
                 {validationError && (
-                  <div className="text-[10px] text-rose-400 flex items-center gap-1">
+                  <div className="text-[10px] text-rose-600 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3 shrink-0" />
                     <span>{validationError}</span>
                   </div>
@@ -392,13 +445,13 @@ export function Sidebar({
                       setInputName("");
                       setValidationError("");
                     }}
-                    className="text-[10px] px-2 py-0.5 rounded text-neutral-400 hover:text-white"
+                    className="text-[10px] px-2 py-0.5 rounded text-neutral-500 hover:text-neutral-800"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="text-[10px] px-2.5 py-0.5 rounded bg-emerald-500 text-black font-semibold hover:bg-emerald-400 transition"
+                    className="text-[10px] px-2.5 py-0.5 rounded bg-neutral-900 text-white font-semibold hover:bg-neutral-800 transition"
                   >
                     Create {createMode === "file" ? "File" : "Folder"}
                   </button>
