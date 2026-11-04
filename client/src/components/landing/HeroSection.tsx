@@ -25,7 +25,7 @@ export function HeroSection() {
       {/* Asset Image Background: width matches web width */}
       <div
         className="absolute top-0 left-0 w-full h-[800px] bg-cover bg-top bg-no-repeat pointer-events-none z-0"
-        style={{ backgroundImage: "url('/assets/image.png')" }}
+      // style={{ backgroundImage: "url('/assets/image.png')" }}
       />
       {/* Very, very light white overlay on hero image */}
       <div className="absolute top-0 left-0 w-full h-[800px] bg-white/[0.18] pointer-events-none z-0" />
