@@ -11,6 +11,7 @@
   "dependencies": {
     "@heroui/react": "^3.2.6",
     "@monaco-editor/react": "^4.7.0",
+    "@vercel/analytics": "^2.0.1",
     "@webcontainer/api": "^1.6.4",
     "clsx": "^2.1.1",
     "framer-motion": "^14.0.0",
